@@ -6,7 +6,7 @@ import axios from "axios";
 import YoutubePicker from "./YoutubePicker";
 import ImagePicker from "./ImagePicker";
 import { useAuth } from "./AuthContext";
-import { ImageIcon, Youtube, Trash2, Loader2 } from "lucide-react";
+import { ImageIcon, Youtube, Loader2 } from "lucide-react";
 
 import {
   Form,
@@ -22,12 +22,12 @@ import { Button } from "@/components/ui/button";
 
 const optionSchema = z.object({
   text: z.string().min(1, "Đáp án không được rỗng"),
-  isCorrect: z.boolean(),
+  order: z.number(),
 });
 
 const questionSchema = z.object({
   text: z.string().min(3, "Câu hỏi ít nhất 3 ký tự"),
-  options: z.array(optionSchema).min(2, "Phải có ít nhất 2 đáp án"),
+  options: z.array(optionSchema).length(4, "Phải có đúng 4 đáp án"),
   mediaType: z.enum(["IMAGE", "YOUTUBE"]).optional(),
   videoUrl: z
     .string()
@@ -38,7 +38,7 @@ const questionSchema = z.object({
   duration: z.number().optional(),
 });
 
-const ButtonQuestionForm = () => {
+const ReorderQuestionForm = () => {
   const { token } = useAuth();
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -51,8 +51,10 @@ const ButtonQuestionForm = () => {
     defaultValues: {
       text: "",
       options: [
-        { text: "", isCorrect: true },
-        { text: "", isCorrect: false },
+        { text: "", order: 1 },
+        { text: "", order: 2 },
+        { text: "", order: 3 },
+        { text: "", order: 4 },
       ],
       mediaType: undefined,
       videoUrl: "",
@@ -61,7 +63,7 @@ const ButtonQuestionForm = () => {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: "options",
   });
@@ -72,7 +74,7 @@ const ButtonQuestionForm = () => {
     setZoom(1);
   };
 
-  // Lấy ảnh crop
+  // Crop ảnh
   const getCroppedImg = async () => {
     if (!imageSrc || !croppedAreaPixels) return null;
     const image = new Image();
@@ -110,37 +112,40 @@ const ButtonQuestionForm = () => {
       setLoading(true);
 
       const formData = new FormData();
-
       formData.append("quizId", 12);
       formData.append("text", values.text);
-      formData.append("type", "BUTTONS");
-      formData.append("options", JSON.stringify(values.options));
-      
+      formData.append("type", "REORDER");
+
+      // Đảm bảo order theo index
+      const orderedOptions = values.options.map((o, i) => ({
+        ...o,
+        order: i + 1,
+      }));
+
+      formData.append("options", JSON.stringify(orderedOptions));
+
       if (values.mediaType === "IMAGE") {
         const croppedBlob = await getCroppedImg();
         if (croppedBlob) {
-          formData.append("files", croppedBlob, "image.jpg"); 
+          formData.append("files", croppedBlob, "image.jpg");
         }
       } else if (values.mediaType === "YOUTUBE") {
-        const videoData = 
-          {
-            url: values.videoUrl,
-            startTime: values.startTime,
-            duration: values.duration,
-          }
-        ;
+        const videoData = {
+          url: values.videoUrl,
+          startTime: values.startTime,
+          duration: values.duration,
+        };
         formData.append("videos", JSON.stringify(videoData));
       }
 
-      // Call API 1 lần duy nhất
-      await axios.post("http://localhost:5000/question/buttons", formData, {
+      await axios.post("http://localhost:5000/question/reorder", formData, {
         headers: {
           Authorization: token,
           "Content-Type": "multipart/form-data",
         },
       });
 
-      alert("Tạo câu hỏi thành công!");
+      alert("Tạo câu hỏi sắp xếp thành công!");
       form.reset();
       removeImage();
     } catch (err) {
@@ -152,20 +157,20 @@ const ButtonQuestionForm = () => {
   };
 
   return (
-    <div className="p-6 border rounded-xl shadow bg-white/40 backdrop-blur-lg">
+    <div className="p-6 border rounded-xl shadow bg-white/40 backdrop-blur-lg relative">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl z-50">
           <Loader2 className="animate-spin h-8 w-8 text-white" />
         </div>
       )}
 
-      <h2 className="font-bold text-lg mb-4">Tạo câu hỏi trắc nghiệm</h2>
+      <h2 className="font-bold text-lg mb-4">Tạo câu hỏi sắp xếp</h2>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-4 flex flex-row gap-8"
         >
-          {/* Chọn media */}
+          {/* Media */}
           <div className="flex flex-col gap-3">
             <div className="flex justify-center gap-8">
               <Button
@@ -184,7 +189,6 @@ const ButtonQuestionForm = () => {
               </Button>
             </div>
 
-            {/* Nếu chọn IMAGE */}
             {form.watch("mediaType") === "IMAGE" && (
               <ImagePicker
                 imageSrc={imageSrc}
@@ -197,14 +201,13 @@ const ButtonQuestionForm = () => {
               />
             )}
 
-            {/* Nếu chọn YOUTUBE */}
             {form.watch("mediaType") === "YOUTUBE" && (
               <YoutubePicker form={form} />
             )}
           </div>
 
+          {/* Nội dung */}
           <div className="flex flex-col gap-4">
-            {/* Text câu hỏi */}
             <FormField
               control={form.control}
               name="text"
@@ -218,9 +221,9 @@ const ButtonQuestionForm = () => {
                 </FormItem>
               )}
             />
-            {/* Options */}
+
             <div>
-              <FormLabel className="mb-2">Đáp án</FormLabel>
+              <FormLabel className="mb-2">Các đáp án: </FormLabel>
               {fields.map((field, idx) => (
                 <div key={field.id} className="flex items-center gap-2 mb-2">
                   <FormField
@@ -229,49 +232,14 @@ const ButtonQuestionForm = () => {
                     render={({ field }) => (
                       <FormItem className="flex-1">
                         <FormControl>
-                          <Input placeholder={`Đáp án ${idx + 1}`} {...field} />
+                          <Input placeholder={`Thứ tự ${idx + 1}`} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name={`options.${idx}.isCorrect`}
-                    render={({ field }) => (
-                      <input
-                        type="radio"
-                        checked={field.value}
-                        onChange={() =>
-                          form.setValue(
-                            "options",
-                            form.getValues("options").map((o, i) => ({
-                              ...o,
-                              isCorrect: i === idx,
-                            }))
-                          )
-                        }
-                      />
-                    )}
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    disabled={fields.length <= 2}
-                    onClick={() => remove(idx)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
               ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => append({ text: "", isCorrect: false })}
-              >
-                + Thêm đáp án
-              </Button>
             </div>
 
             <Button type="submit" className="w-full">
@@ -284,4 +252,4 @@ const ButtonQuestionForm = () => {
   );
 };
 
-export default ButtonQuestionForm;
+export default ReorderQuestionForm;

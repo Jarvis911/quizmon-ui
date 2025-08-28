@@ -9,15 +9,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-const YoutubePicker = ({ form }) => {
+
+const YoutubePicker = ({ form }) => { // RHF from the parent component
   const playerRef = useRef(null);
-  const [videoDuration, setVideoDuration] = useState(0);
-  const [isValidUrl, setIsValidUrl] = useState(true);
+  const [videoDuration, setVideoDuration] = useState(0); // To get the max video duration
+  const [isValidUrl, setIsValidUrl] = useState(true); // To check if the url is valid
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Validate is youtube url?
   const isValidYouTubeUrl = (url) =>
     /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url);
 
+
+  // When the url change, we check if it valid, reinitialize the duration and error message
   const handleUrlChange = (e) => {
     const url = e.target.value;
     form.setValue("videoUrl", url);
@@ -40,8 +44,8 @@ const YoutubePicker = ({ form }) => {
                 placeholder="Dán link YouTube..."
                 {...field}
                 onChange={(e) => {
-                  field.onChange(e);
-                  handleUrlChange(e);
+                  field.onChange(e); // Call field's onChange method to update value of field
+                  handleUrlChange(e); // Call url change
                 }}
               />
             </FormControl>
@@ -55,7 +59,7 @@ const YoutubePicker = ({ form }) => {
       
       {form.watch("videoUrl") && isValidUrl && (
         <ReactPlayer
-          ref={playerRef}
+          ref={playerRef} // Grant this ReactPlayer is playerRef to use later
           url={form.watch("videoUrl")}
           controls={false}
           width="500px"
@@ -105,6 +109,7 @@ const YoutubePicker = ({ form }) => {
                       if (playerRef.current) {
                         console.log("[YoutubePicker] SeekTo:", newVal);
                         playerRef.current.seekTo(newVal, "seconds");
+                        // Seek preview video to new start time
                       }
                     }}
                   />
@@ -129,8 +134,8 @@ const YoutubePicker = ({ form }) => {
                     value={field.value}
                     onChange={(e) => {
                       const newVal = Number(e.target.value);
-                      console.log("[YoutubePicker] Duration thay đổi:", newVal);
                       field.onChange(newVal);
+                      // Change duration value
                     }}
                   />
                 </FormControl>

@@ -3,12 +3,13 @@ import Cropper from "react-easy-crop";
 import { Upload, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Process the after crop part
 const ImagePicker = ({ imageSrc, setImageSrc, crop, setCrop, zoom, setZoom, setCroppedAreaPixels }) => {
   const onCropComplete = useCallback((_, croppedPixels) => {
     setCroppedAreaPixels(croppedPixels);
   }, [setCroppedAreaPixels]);
 
-  const removeImage = () => {
+  const removeImage = () => { // Reset Image src, reset crop stat and zoom stat
     setImageSrc(null);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
@@ -16,7 +17,7 @@ const ImagePicker = ({ imageSrc, setImageSrc, crop, setCrop, zoom, setZoom, setC
 
   return (
     <div className="relative w-[500px] h-[300px] border rounded-lg overflow-hidden">
-      {!imageSrc ? (
+      {!imageSrc ? ( // If there is not an image, show the placeholder image
         <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
           <Upload className="w-10 h-10 text-gray-400" />
           <span>Chọn ảnh</span>
@@ -33,7 +34,7 @@ const ImagePicker = ({ imageSrc, setImageSrc, crop, setCrop, zoom, setZoom, setC
             }}
           />
         </label>
-      ) : (
+      ) : ( // If there is an image, show the cropper with the image inside
         <>
           <Cropper
             image={imageSrc}

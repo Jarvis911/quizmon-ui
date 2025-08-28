@@ -133,7 +133,7 @@ const ButtonQuestionForm = () => {
       }
 
       // Call API 1 lần duy nhất
-      await axios.post("http://localhost:5000/question/buttons", formData, {
+      await axios.post("http://localhost:5000/question/checkboxes", formData, {
         headers: {
           Authorization: token,
           "Content-Type": "multipart/form-data",
@@ -240,15 +240,13 @@ const ButtonQuestionForm = () => {
                     name={`options.${idx}.isCorrect`}
                     render={({ field }) => (
                       <input
-                        type="radio"
+                        type="checkbox"
                         checked={field.value}
                         onChange={() =>
                           form.setValue(
                             "options",
-                            form.getValues("options").map((o, i) => ({
-                              ...o,
-                              isCorrect: i === idx,
-                            }))
+                            form.getValues("options").map((o, i) => 
+                            i === idx ? {...o, isCorrect: !o.isCorrect } : o )
                           )
                         }
                       />

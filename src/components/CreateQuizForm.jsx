@@ -29,23 +29,26 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 
 const quizSchema = z.object({
-  title: z.string().min(3, "Tên quiz ít nhất 3 ký tự"),
+  title: z.string().min(3, "Tên quiz ít nhất 5 ký tự"),
   description: z.string().min(10, "Mô tả ít nhất 10 ký tự"),
   quiz_category: z.string().nonempty("Phải chọn category"),
-  image: z.any().optional(),
+  image: z.any(),
   is_public: z.boolean().default(true),
 });
 
 const CreateQuizForm = () => {
   const { token } = useAuth();
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  // Crop and zoom image
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
+  // Intialize form with react hook form
   const form = useForm({
     resolver: zodResolver(quizSchema),
     defaultValues: {
@@ -75,7 +78,18 @@ const CreateQuizForm = () => {
     form.setValue("image", null);
   };
 
-  // Hàm lấy ảnh đã crop
+  // Drag & Drop handler
+  const handleDrop = (e, field) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setImageSrc(url);
+      field.onChange(file);
+    }
+  };
+
+  // Get cropped image
   const getCroppedImg = async () => {
     if (!imageSrc || !croppedAreaPixels) return null;
 
@@ -143,16 +157,6 @@ const CreateQuizForm = () => {
     }
   };
 
-  // Drag & Drop handler
-  const handleDrop = (e, field) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) {
-      const url = URL.createObjectURL(file);
-      setImageSrc(url);
-      field.onChange(file);
-    }
-  };
 
   return (  
     <div className="mx-auto p-6 border rounded-xl shadow-md bg-white/30 backdrop-blur-lg">
@@ -245,7 +249,7 @@ const CreateQuizForm = () => {
               />
             </div>
 
-            {/* Các field khác */}
+            {/* Other field */}
             <div className="flex flex-col gap-8">
               <FormField
                 control={form.control}
