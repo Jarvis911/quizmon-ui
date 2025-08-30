@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,7 +38,7 @@ const questionSchema = z.object({
   duration: z.number().optional(),
 });
 
-const ButtonQuestionForm = () => {
+const ButtonQuestionForm = ({ quizId, question }) => {
   const { token } = useAuth();
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -65,6 +65,35 @@ const ButtonQuestionForm = () => {
     control: form.control,
     name: "options",
   });
+
+  useEffect(() => {
+    if (question) {
+      form.reset({
+        text: question.text || "",
+        options: question.options?.map((o) => ({
+          text: o.text,
+          isCorrect: o.isCorrect,
+        })) || [
+          { text: "", isCorrect: true },
+          { text: "", isCorrect: false },
+        ],
+        mediaType: question.media?.length
+          ? question.media[0].type === "VIDEO"
+            ? "YOUTUBE"
+            : "IMAGE"
+          : undefined,
+        videoUrl:
+          question.media?.[0]?.type === "VIDEO" ? question.media[0].url : "",
+        startTime: question.media?.[0]?.startTime || 0,
+        duration: question.media?.[0]?.duration || 30,
+      });
+
+      // Nếu là ảnh → set preview
+      if (question.media?.[0]?.type === "IMAGE") {
+        setImageSrc(question.media[0].url);
+      }
+    }
+  }, [question, form]);
 
   const removeImage = () => {
     setImageSrc(null);
@@ -111,7 +140,7 @@ const ButtonQuestionForm = () => {
 
       const formData = new FormData();
 
-      formData.append("quizId", 12);
+      formData.append("quizId", quizId);
       formData.append("text", values.text);
       formData.append("type", "BUTTONS");
       formData.append("options", JSON.stringify(values.options));
@@ -132,20 +161,34 @@ const ButtonQuestionForm = () => {
         formData.append("videos", JSON.stringify(videoData));
       }
 
-      // Call API 1 lần duy nhất
-      await axios.post("http://localhost:5000/question/buttons", formData, {
+      if (question?.id) {
+        // 🟢 Update câu hỏi
+        await axios.put(
+          `http://localhost:5000/question/buttons/${question.id}`,
+          formData,
+          {
+            headers: {
+              Authorization: token,
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        alert("Cập nhật câu hỏi thành công!");
+      } else
+        // Tạo mới câu hỏi
+        {await axios.post("http://localhost:5000/question/buttons", formData, {
         headers: {
           Authorization: token,
           "Content-Type": "multipart/form-data",
         },
-      });
+      });}
 
       alert("Tạo câu hỏi thành công!");
       form.reset();
       removeImage();
     } catch (err) {
       console.error(err);
-      alert("Lỗi khi tạo câu hỏi");
+      alert("Lỗi khi lưu câu hỏi");
     } finally {
       setLoading(false);
     }
@@ -159,7 +202,7 @@ const ButtonQuestionForm = () => {
         </div>
       )}
 
-      <h2 className="font-bold text-lg mb-4">Tạo câu hỏi trắc nghiệm</h2>
+      <h2 className="font-bold text-lg mb-4">{ question ? "Chỉnh sửa câu hỏi" : "Tạo câu hỏi trắc nghiệm"}</h2>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -185,7 +228,7 @@ const ButtonQuestionForm = () => {
             </div>
 
             {/* Nếu chọn IMAGE */}
-            {form.watch("mediaType") === "IMAGE" && (
+            {form.watch("mediaType") === "IMAGE" &&  (
               <ImagePicker
                 imageSrc={imageSrc}
                 setImageSrc={setImageSrc}
@@ -275,7 +318,7 @@ const ButtonQuestionForm = () => {
             </div>
 
             <Button type="submit" className="w-full">
-              Lưu câu hỏi
+              { question ? "Cập nhật câu hỏi" : "Lưu câu hỏi"}
             </Button>
           </div>
         </form>
