@@ -3,9 +3,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import YoutubePicker from "./YoutubePicker";
-import ImagePicker from "./ImagePicker";
-import { useAuth } from "./AuthContext";
+import YoutubePicker from "@/components/picker/YoutubePicker";
+import ImagePicker from "@/components/picker/ImagePicker";
+import { useAuth } from "@/context/AuthContext";
 import { ImageIcon, Youtube, Loader2 } from "lucide-react";
 
 import {
@@ -20,36 +20,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
-// ---------------- Schema ----------------
-const questionSchema = z
-  .object({
-    text: z.string().min(3, "Câu hỏi ít nhất 3 ký tự"),
-    minValue: z.number({ invalid_type_error: "Phải nhập số" }),
-    maxValue: z.number({ invalid_type_error: "Phải nhập số" }),
-    correctValue: z.number({ invalid_type_error: "Phải nhập số" }),
-    mediaType: z.enum(["IMAGE", "YOUTUBE"]).optional(),
-    videoUrl: z
-      .string()
-      .url("Link YouTube không hợp lệ")
-      .optional()
-      .or(z.literal("")),
-    startTime: z.number().optional(),
-    duration: z.number().optional(),
-  })
-  .refine((data) => data.minValue < data.maxValue, {
-    path: ["maxValue"],
-    message: "Giá trị max phải lớn hơn min",
-  })
-  .refine(
-    (data) => data.correctValue >= data.minValue && data.correctValue <= data.maxValue,
-    {
-      path: ["correctValue"],
-      message: "Giá trị đúng phải nằm trong khoảng min - max",
-    }
-  );
+const questionSchema = z.object({
+  text: z.string().min(3, "Câu hỏi ít nhất 3 ký tự"),
+  correctAnswer: z.string().min(1, "Phải có đáp án đúng"),
+  mediaType: z.enum(["IMAGE", "YOUTUBE"]).optional(),
+  videoUrl: z
+    .string()
+    .url("Link YouTube không hợp lệ")
+    .optional()
+    .or(z.literal("")),
+  startTime: z.number().optional(),
+  duration: z.number().optional(),
+});
 
-// ---------------- Component ----------------
-const RangeQuestion = () => {
+const TypeAnswerQuestionForm = () => {
   const { token } = useAuth();
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -61,9 +45,7 @@ const RangeQuestion = () => {
     resolver: zodResolver(questionSchema),
     defaultValues: {
       text: "",
-      minValue: 0,
-      maxValue: 100,
-      correctValue: 50,
+      correctAnswer: "",
       mediaType: undefined,
       videoUrl: "",
       startTime: 0,
@@ -77,7 +59,6 @@ const RangeQuestion = () => {
     setZoom(1);
   };
 
-  // crop ảnh
   const getCroppedImg = async () => {
     if (!imageSrc || !croppedAreaPixels) return null;
     const image = new Image();
@@ -117,10 +98,8 @@ const RangeQuestion = () => {
       const formData = new FormData();
       formData.append("quizId", 12);
       formData.append("text", values.text);
-      formData.append("type", "RANGE");
-      formData.append("minValue", values.minValue);
-      formData.append("maxValue", values.maxValue);
-      formData.append("correctValue", values.correctValue);
+      formData.append("type", "TYPEANSWER");
+      formData.append("correctAnswer", values.correctAnswer);
 
       if (values.mediaType === "IMAGE") {
         const croppedBlob = await getCroppedImg();
@@ -136,14 +115,14 @@ const RangeQuestion = () => {
         formData.append("videos", JSON.stringify(videoData));
       }
 
-      await axios.post("http://localhost:5000/question/range", formData, {
+      await axios.post("http://localhost:5000/question/typeanswer", formData, {
         headers: {
           Authorization: token,
           "Content-Type": "multipart/form-data",
         },
       });
 
-      alert("Tạo câu hỏi thành công!");
+      alert("Tạo câu hỏi nhập đáp án thành công!");
       form.reset();
       removeImage();
     } catch (err) {
@@ -155,14 +134,14 @@ const RangeQuestion = () => {
   };
 
   return (
-    <div className="p-6 border rounded-xl shadow bg-white/40 backdrop-blur-lg">
+    <div className="p-6 border rounded-xl shadow bg-white/40 backdrop-blur-lg relative">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl z-50">
           <Loader2 className="animate-spin h-8 w-8 text-white" />
         </div>
       )}
 
-      <h2 className="font-bold text-lg mb-4">Tạo câu hỏi Range</h2>
+      <h2 className="font-bold text-lg mb-4">Tạo câu hỏi nhập đáp án</h2>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -204,9 +183,8 @@ const RangeQuestion = () => {
             )}
           </div>
 
-          {/* Inputs */}
+          {/* Nội dung */}
           <div className="flex flex-col gap-4">
-            {/* Text câu hỏi */}
             <FormField
               control={form.control}
               name="text"
@@ -221,77 +199,19 @@ const RangeQuestion = () => {
               )}
             />
 
-            {/* Min - Max - Correct */}
-            <div className="grid grid-rows-3 gap-3">
-              <FormField
-                control={form.control}
-                name="minValue"
-                render={({ field }) => (
-                  <FormItem  className="max-w-70">
-                    <FormLabel>Giá trị nhỏ nhất</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="maxValue"
-                render={({ field }) => (
-                  <FormItem className="max-w-70">
-                    <FormLabel>Giá trị lớn nhất</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage/>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="correctValue"
-                render={({ field }) => (
-                  <FormItem  className="max-w-70">
-                    <FormLabel>Giá trị đúng</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage/>
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Range Preview */}
-            <div className="flex flex-col gap-2">
-              <FormLabel>Thanh giá trị</FormLabel>
-              <input
-                type="range"
-                min={form.watch("minValue")}
-                max={form.watch("maxValue")}
-                value={form.watch("correctValue")}
-                readOnly
-              />
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>{form.watch("minValue")}</span>
-                <span>{form.watch("correctValue")}</span>
-                <span>{form.watch("maxValue")}</span>
-              </div>
-            </div>
+            <FormField
+              control={form.control}
+              name="correctAnswer"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Đáp án đúng</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nhập đáp án đúng..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <Button type="submit" className="w-full">
               Lưu câu hỏi
@@ -303,4 +223,4 @@ const RangeQuestion = () => {
   );
 };
 
-export default RangeQuestion;
+export default TypeAnswerQuestionForm;

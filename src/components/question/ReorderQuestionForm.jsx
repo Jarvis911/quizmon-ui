@@ -3,9 +3,9 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import YoutubePicker from "./YoutubePicker";
-import ImagePicker from "./ImagePicker";
-import { useAuth } from "./AuthContext";
+import YoutubePicker from "@/components/picker/YoutubePicker";
+import ImagePicker from "@/components/picker/ImagePicker";
+import { useAuth } from "@/context/AuthContext";
 import { ImageIcon, Youtube, Loader2 } from "lucide-react";
 
 import {

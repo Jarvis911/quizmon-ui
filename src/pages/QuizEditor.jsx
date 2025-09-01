@@ -1,35 +1,37 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Check, Plus, Type } from "lucide-react";
 import axios from "axios";
+import endpoints from "@/api/api";
 
-import ButtonQuestionForm from "./ButtonQuestionForm";
-import CheckboxQuestionForm from "./CheckboxQuestionForm";
-import RangeQuestion from "./RangeQuestion";
-import SelectQuestionType from "./SelectQuestionType";
+import ButtonQuestionForm from "@/components/question/ButtonQuestionForm";
+import CheckboxQuestionForm from "@/components/question/CheckboxQuestionForm";
+import RangeQuestionForm from "@/components/question/RangeQuestionForm";
+import ReorderQuestionForm from "@/components/question/ReorderQuestionForm";
+import TypeAnswerQuestionForm from "@/components/question/TypeAnswerQuestionForm";
+import LocationQuestionForm from "@/components/question/LocationQuestionForm";
+import SelectQuestionType from "@/components/quiz/SelectQuestionType";
 
 const QuizEditor = () => {
-  const { id } = useParams(); // quizId từ route
+  const { id } = useParams();
   const [questions, setQuestions] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
-  const [selectingType, setSelectingType] = useState(false);
+  const [creatingType, setCreatingType] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🟢 Load quiz + câu hỏi từ backend
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/quiz/${id}`);
-        // API trả về { id, title, description, questions: [...] }
+        const res = await axios.get(endpoints.quiz(id));
         const normalized = (res.data.questions || []).map((q) => ({
           id: q.id,
           text: q.text,
-          type: q.type, // "BUTTONS", "CHECKBOXES", "RANGE"
+          type: q.type,
           media: q.media || [],
           options: q.options || [],
-          range: q.range,
-          // có thể thêm các field đặc biệt khác
+          location: q.location || [],
+          range: q.range || []          
         }));
         setQuestions(normalized);
         setActiveIndex(normalized.length ? 0 : null);
@@ -43,26 +45,41 @@ const QuizEditor = () => {
   }, [id]);
 
   const addQuestion = (type) => {
-    const newQ = { id: Date.now(), type, text: "", media: [], options: [] };
+    setCreatingType(type);
+    setActiveIndex(null);
+  };
+
+  const handleSaveNew = (newQ) => {
     setQuestions([...questions, newQ]);
     setActiveIndex(questions.length);
-    setSelectingType(false);
-    // TODO: gọi API POST /quiz/:id/questions để lưu DB
-  };
+    setCreatingType(null);
+  }
 
   const renderActiveQuestion = () => {
     if (loading) return <p className="text-gray-500">Đang tải quiz...</p>;
 
-    if (selectingType) {
-      return <SelectQuestionType onSelect={addQuestion} />;
+    if (creatingType) {
+      if (creatingType === "BUTTONS") 
+          return <ButtonQuestionForm quizId={id} onSaved={handleSaveNew} />
+      if (creatingType === "CHECKBOXES")
+          return <CheckboxQuestionForm quizId={id} onSaved={handleSaveNew} />
+      if (creatingType === "RANGE") 
+          return <TypeAnswerQuestionForm quizId={id} onSaved={handleSaveNew} />
+      if (creatingType === "REORDER")
+          return <ReorderQuestionForm quizId={id} onSaved={handleSaveNew} />
+      if (creatingType === "TYPEANSWER")
+          return <TypeAnswerQuestionForm quizId={id} onSaved={handleSaveNew} />
+      if (creatingType === "LOCATION")
+          return <LocationQuestionForm quizId={id} onSaved={handleSaveNew} />
     }
 
     const q = questions[activeIndex];
+
     if (!q) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-gray-500">
           <p>Chưa có câu hỏi nào</p>
-          <Button className="mt-4" onClick={() => setSelectingType(true)}>
+          <Button className="mt-4">
             + Thêm câu hỏi đầu tiên
           </Button>
         </div>
@@ -73,49 +90,58 @@ const QuizEditor = () => {
       case "BUTTONS":
         return (
           <ButtonQuestionForm
-            question={q}
-            onChange={(updated) => {
-              const copy = [...questions];
-              copy[activeIndex] = updated;
-              setQuestions(copy);
-            }}
+            question={q} quizId={id}
           />
         );
       case "CHECKBOXES":
         return (
           <CheckboxQuestionForm
-            question={q}
-            onChange={(updated) => {
-              const copy = [...questions];
-              copy[activeIndex] = updated;
-              setQuestions(copy);
-            }}
+            question={q} quizId={id}
           />
         );
       case "RANGE":
         return (
-          <RangeQuestion
-            question={q}
-            onChange={(updated) => {
-              const copy = [...questions];
-              copy[activeIndex] = updated;
-              setQuestions(copy);
-            }}
+          <RangeQuestionForm
+            question={q} quizId={id}
           />
         );
+      case "REORDER":
+        return (
+          <ReorderQuestionForm
+            question={q} quizId={id}
+          />
+        );
+      case "TYPEANSWER":
+        return (
+          <TypeAnswerQuestionForm
+            question={q} quizId={id}
+          />
+        );
+      case "LOCATION":
+        return (
+          <LocationQuestionForm
+            question={q} quizId={id}
+          />
+        )
       default:
         return <p className="text-red-500">Loại câu hỏi chưa được hỗ trợ</p>;
     }
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <main className="flex-1 overflow-y-auto p-6">
-        {renderActiveQuestion()}
+    <div className="flex flex-col min-h-250">
+      <main className="flex-1 p-6">
+        {creatingType != "SELECT" && renderActiveQuestion()}
+        {creatingType === "SELECT" && (
+          <SelectQuestionType
+            onSelect={(t) => addQuestion(t)}
+            onClose={() => setCreatingType(null)}
+          />
+        )}
       </main>
 
       {/* Navbar preview */}
-      <footer className="fixed inset-x-0 bottom-0 overflow-x-auto border-t h-28 flex items-center gap-3 px-4 bg-white/80 backdrop-blur-md">
+      <footer className="fixed inset-x-0 bottom-0 overflow-x-auto h-24 flex items-center gap-3 px-2 bg-black/60 backdrop-blur-md">
         {questions.map((q, i) => (
           <div
             key={q.id}
@@ -124,7 +150,7 @@ const QuizEditor = () => {
             }`}
             onClick={() => {
               setActiveIndex(i);
-              setSelectingType(false);
+              setCreatingType(null);
             }}
           >
             {/* thumbnail (ảnh/video) */}
@@ -156,11 +182,12 @@ const QuizEditor = () => {
         ))}
         {/* nút thêm */}
         <Button
-          onClick={() => setSelectingType(true)}
+          onClick={() => setCreatingType("SELECT")}
           className="w-20 h-20 rounded-xl flex items-center justify-center"
         >
           <Plus className="w-6 h-6" />
         </Button>
+
       </footer>
     </div>
   );

@@ -3,9 +3,10 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import YoutubePicker from "./YoutubePicker";
-import ImagePicker from "./ImagePicker";
-import { useAuth } from "./AuthContext";
+import endpoints from "@/api/api.js";
+import YoutubePicker from "@/components/picker/YoutubePicker";
+import ImagePicker from "@/components/picker/ImagePicker";
+import { useAuth } from "@/context/AuthContext";
 import { ImageIcon, Youtube, Trash2, Loader2 } from "lucide-react";
 
 import {
@@ -16,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -38,7 +40,7 @@ const questionSchema = z.object({
   duration: z.number().optional(),
 });
 
-const ButtonQuestionForm = ({ quizId, question }) => {
+const CheckboxQuestionForm = ({quizId, question, onSaved}) => {
   const { token } = useAuth();
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -67,39 +69,39 @@ const ButtonQuestionForm = ({ quizId, question }) => {
   });
 
   useEffect(() => {
-    if (question) {
-      form.reset({
-        text: question.text || "",
-        options: question.options?.map((o) => ({
-          text: o.text,
-          isCorrect: o.isCorrect,
-        })) || [
-          { text: "", isCorrect: true },
-          { text: "", isCorrect: false },
-        ],
-        mediaType: question.media?.length
-          ? question.media[0].type === "VIDEO"
-            ? "YOUTUBE"
-            : "IMAGE"
-          : undefined,
-        videoUrl:
-          question.media?.[0]?.type === "VIDEO" ? question.media[0].url : "",
-        startTime: question.media?.[0]?.startTime || 0,
-        duration: question.media?.[0]?.duration || 30,
-      });
-
-      // Nếu là ảnh → set preview
-      if (question.media?.[0]?.type === "IMAGE") {
-        setImageSrc(question.media[0].url);
+      if (question) {
+        form.reset({
+          text: question.text || "",
+          options: question.options?.map((o) => ({
+            text: o.text,
+            isCorrect: o.isCorrect,
+          })) || [
+            { text: "", isCorrect: true },
+            { text: "", isCorrect: false },
+          ],
+          mediaType: question.media?.length
+            ? question.media[0].type === "VIDEO"
+              ? "YOUTUBE"
+              : "IMAGE"
+            : undefined,
+          videoUrl:
+            question.media?.[0]?.type === "VIDEO" ? question.media[0].url : "",
+          startTime: question.media?.[0]?.startTime || 0,
+          duration: question.media?.[0]?.duration || 30,
+        });
+  
+        // Set preview if it is IMAGE
+        if (question.media?.[0]?.type === "IMAGE") {
+          setImageSrc(question.media[0].url);
+        }
       }
-    }
-  }, [question, form]);
+    }, [question, form]);
 
-  const removeImage = () => {
-    setImageSrc(null);
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-  };
+  // const removeImage = () => {
+  //   setImageSrc(null);
+  //   setCrop({ x: 0, y: 0 });
+  //   setZoom(1);
+  // };
 
   // Lấy ảnh crop
   const getCroppedImg = async () => {
@@ -140,55 +142,49 @@ const ButtonQuestionForm = ({ quizId, question }) => {
 
       const formData = new FormData();
 
-      formData.append("quizId", quizId);
+      formData.append("quizId", Number(quizId));
       formData.append("text", values.text);
       formData.append("type", "BUTTONS");
       formData.append("options", JSON.stringify(values.options));
-      
+
       if (values.mediaType === "IMAGE") {
         const croppedBlob = await getCroppedImg();
         if (croppedBlob) {
-          formData.append("files", croppedBlob, "image.jpg"); 
+          formData.append("files", croppedBlob, "image.jpg");
         }
       } else if (values.mediaType === "YOUTUBE") {
-        const videoData = 
-          {
-            url: values.videoUrl,
-            startTime: values.startTime,
-            duration: values.duration,
-          }
-        ;
+        const videoData = {
+          url: values.videoUrl,
+          startTime: values.startTime,
+          duration: values.duration,
+        };
         formData.append("videos", JSON.stringify(videoData));
       }
-
       if (question?.id) {
-        // 🟢 Update câu hỏi
-        await axios.put(
-          `http://localhost:5000/question/buttons/${question.id}`,
-          formData,
-          {
-            headers: {
-              Authorization: token,
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        await axios.put(endpoints.question_checkbox(question.id), formData, {
+          headers: {
+            Authorization: token,
+            "Content-Type": "multipart/form-data",
+          },
+        });
         alert("Cập nhật câu hỏi thành công!");
-      } else
-        // Tạo mới câu hỏi
-        {await axios.post("http://localhost:5000/question/buttons", formData, {
-        headers: {
-          Authorization: token,
-          "Content-Type": "multipart/form-data",
-        },
-      });}
 
-      alert("Tạo câu hỏi thành công!");
-      form.reset();
-      removeImage();
+      } else {
+        const res = await axios.post(endpoints.question_checkboxes, formData, {
+          headers: {
+            Authorization: token,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        alert("Tạo câu hỏi thành công!");
+        if (onSaved) onSaved(res.data);
+      }
+
+      // form.reset();
+      // removeImage();
     } catch (err) {
       console.error(err);
-      alert("Lỗi khi lưu câu hỏi");
+      alert("Lỗi khi tạo câu hỏi");
     } finally {
       setLoading(false);
     }
@@ -202,7 +198,9 @@ const ButtonQuestionForm = ({ quizId, question }) => {
         </div>
       )}
 
-      <h2 className="font-bold text-lg mb-4">{ question ? "Chỉnh sửa câu hỏi" : "Tạo câu hỏi trắc nghiệm"}</h2>
+      <h2 className="font-bold text-lg mb-4">
+        {question ? "Chỉnh sửa câu hỏi hộp kiểm" : "Tạo câu hỏi hộp kiểm"}
+      </h2>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -228,7 +226,7 @@ const ButtonQuestionForm = ({ quizId, question }) => {
             </div>
 
             {/* Nếu chọn IMAGE */}
-            {form.watch("mediaType") === "IMAGE" &&  (
+            {form.watch("mediaType") === "IMAGE" && (
               <ImagePicker
                 imageSrc={imageSrc}
                 setImageSrc={setImageSrc}
@@ -283,15 +281,18 @@ const ButtonQuestionForm = ({ quizId, question }) => {
                     name={`options.${idx}.isCorrect`}
                     render={({ field }) => (
                       <input
-                        type="radio"
+                        type="checkbox"
                         checked={field.value}
                         onChange={() =>
                           form.setValue(
                             "options",
-                            form.getValues("options").map((o, i) => ({
-                              ...o,
-                              isCorrect: i === idx,
-                            }))
+                            form
+                              .getValues("options")
+                              .map((o, i) =>
+                                i === idx
+                                  ? { ...o, isCorrect: !o.isCorrect }
+                                  : o
+                              )
                           )
                         }
                       />
@@ -318,7 +319,7 @@ const ButtonQuestionForm = ({ quizId, question }) => {
             </div>
 
             <Button type="submit" className="w-full">
-              { question ? "Cập nhật câu hỏi" : "Lưu câu hỏi"}
+              {question ? "Cập nhật câu hỏi" : "Lưu câu hỏi"}
             </Button>
           </div>
         </form>
@@ -327,4 +328,4 @@ const ButtonQuestionForm = ({ quizId, question }) => {
   );
 };
 
-export default ButtonQuestionForm;
+export default CheckboxQuestionForm;

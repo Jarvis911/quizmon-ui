@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
+import endpoints from "@/api/api.js";
 
 // UI shadcn
 import {
@@ -18,7 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
-  import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const questionSchema = z.object({
@@ -36,7 +37,7 @@ function LocationPicker({ setLocation }) {
   return null;
 }
 
-const LocationQuestionForm = () => {
+const LocationQuestionForm = ({ quizId, question, onSaved }) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState(null);
@@ -55,22 +56,32 @@ const LocationQuestionForm = () => {
       setLoading(true);
 
       const payload = {
-        quizId: 12,
+        quizId: quizId,
         text: values.text,
         type: "LOCATION",
         correctLatitude: values.latitude,
         correctLongitude: values.longitude,
       };
 
-      await axios.post("http://localhost:5000/question/location", payload, {
-        headers: {
-          Authorization: token,
-        },
-      });
+      if (question?.id) {
+        await axios.put(endpoints.question_location(question.id), payload, {
+          headers: {
+            Authorization: token,
+          },
+        });
+        alert("Cập nhật câu hỏi thành công!");
+      } else {
+        const res = await axios.post(endpoints.question_locations, payload, {
+          headers: {
+            Authorization: token,
+          },
+        });
+        alert("Tạo câu hỏi thành công");
+        if (onSaved) onSaved(res.data);
+      }
 
-      alert("Tạo câu hỏi thành công!");
-      form.reset();
-      setLocation(null);
+      // form.reset();
+      // setLocation(null);
     } catch (err) {
       console.error(err);
       alert("Lỗi khi tạo câu hỏi");
@@ -84,6 +95,22 @@ const LocationQuestionForm = () => {
     form.setValue("latitude", location.lat);
     form.setValue("longitude", location.lng);
   }
+
+  // Centering the data from backend
+  useEffect(() => {
+    if (question) {
+      form.reset({
+        text: question.text || ""
+      });
+
+      if (question.location?.correctLatitude && question.location?.correctLongitude) {
+        setLocation({
+          lat: Number(question.location.correctLatitude),
+          lng: Number(question.location.correctLongitude),
+        });
+      }
+    }
+  }, [form, question]);
 
   return (
     <div className="p-6 border rounded-xl shadow bg-white/40 backdrop-blur-lg">
@@ -103,7 +130,9 @@ const LocationQuestionForm = () => {
           <div className="flex flex-col gap-3">
             <MapContainer
               className="min-w-lg"
-              center={[10.7904, 106.69285]} 
+              key={location ? `${location.lat}-${location.lng}` : "default"}
+              // Location was updated after useEffect -> center will not update until map remount -> Key have to change
+              center={location ? [location.lat, location.lng] : [10.7904, 106.69285]}
               zoom={10}
               style={{ height: "450px", borderRadius: "12px" }}
             >

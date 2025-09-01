@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useAuth } from "./AuthContext"
+import { useAuth } from "../../context/AuthContext"
 import { useNavigate } from "react-router-dom";
 
 
