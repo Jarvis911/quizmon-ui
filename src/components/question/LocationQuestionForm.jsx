@@ -120,7 +120,7 @@ const LocationQuestionForm = ({ quizId, question, onSaved }) => {
         </div>
       )}
 
-      <h2 className="font-bold text-lg mb-4">Tạo câu hỏi về địa điểm</h2>
+      <h2 className="font-bold text-lg mb-4">{question ? "Chỉnh sửa câu hỏi về địa điểm" : "Tạo câu hỏi về địa điểm"}</h2>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -151,7 +151,7 @@ const LocationQuestionForm = ({ quizId, question, onSaved }) => {
           </div>
 
           {/* Text câu hỏi */}
-          <div className="flex flex-col gap-4 w-1/2">
+          <div className="flex flex-col gap-4 w-1/2 min-w-[250px]">
             <FormField
               control={form.control}
               name="text"
@@ -170,7 +170,7 @@ const LocationQuestionForm = ({ quizId, question, onSaved }) => {
             />
 
             <Button type="submit" className="w-full">
-              Lưu câu hỏi
+              {question ? "Cập nhật câu hỏi" : "Lưu câu hỏi"}
             </Button>
           </div>
         </form>

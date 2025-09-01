@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,6 +7,7 @@ import YoutubePicker from "@/components/picker/YoutubePicker";
 import ImagePicker from "@/components/picker/ImagePicker";
 import { useAuth } from "@/context/AuthContext";
 import { ImageIcon, Youtube, Loader2 } from "lucide-react";
+import endpoints from "../../api/api";
 
 import {
   Form,
@@ -38,7 +39,7 @@ const questionSchema = z.object({
   duration: z.number().optional(),
 });
 
-const ReorderQuestionForm = () => {
+const ReorderQuestionForm = ({ quizId, question, onSaved }) => {
   const { token } = useAuth();
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -68,11 +69,39 @@ const ReorderQuestionForm = () => {
     name: "options",
   });
 
-  const removeImage = () => {
-    setImageSrc(null);
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-  };
+
+  useEffect(() => {
+    if (question) {
+      form.reset({
+        text: question.text || "",
+        options: question.options?.map((o) => ({
+          text: o.text,
+          order: o.order,
+        })),
+
+        mediaType: question.media?.length
+          ? question.media[0].type === "VIDEO"
+            ? "YOUTUBE"
+            : "IMAGE"
+          : undefined,
+        videoUrl:
+          question.media?.[0]?.type === "VIDEO" ? question.media[0].url : "",
+        startTime: question.media?.[0]?.startTime || 0,
+        duration: question.media?.[0]?.duration || 30,
+      });
+
+      // Set preview if it is IMAGE
+      if (question.media?.[0]?.type === "IMAGE") {
+        setImageSrc(question.media[0].url);
+      }
+    }
+  }, [question, form]);
+
+  // const removeImage = () => {
+  //   setImageSrc(null);
+  //   setCrop({ x: 0, y: 0 });
+  //   setZoom(1);
+  // };
 
   // Crop ảnh
   const getCroppedImg = async () => {
@@ -112,7 +141,7 @@ const ReorderQuestionForm = () => {
       setLoading(true);
 
       const formData = new FormData();
-      formData.append("quizId", 12);
+      formData.append("quizId", quizId);
       formData.append("text", values.text);
       formData.append("type", "REORDER");
 
@@ -121,7 +150,6 @@ const ReorderQuestionForm = () => {
         ...o,
         order: i + 1,
       }));
-
       formData.append("options", JSON.stringify(orderedOptions));
 
       if (values.mediaType === "IMAGE") {
@@ -137,17 +165,25 @@ const ReorderQuestionForm = () => {
         };
         formData.append("videos", JSON.stringify(videoData));
       }
+      if (question?.id) {
+        await axios.put(endpoints.question_reorder(question.id), formData, {
+          headers: {
+            Authorization: token,
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
-      await axios.post("http://localhost:5000/question/reorder", formData, {
+        alert("Tạo câu hỏi sắp xếp thành công!");
+      } else {
+      const res = await axios.post(endpoints.question_reorders, formData, {
         headers: {
           Authorization: token,
           "Content-Type": "multipart/form-data",
         },
       });
-
       alert("Tạo câu hỏi sắp xếp thành công!");
-      form.reset();
-      removeImage();
+      if (onSaved) onSaved(res.data);
+    }
     } catch (err) {
       console.error(err);
       alert("Lỗi khi tạo câu hỏi");
@@ -164,7 +200,7 @@ const ReorderQuestionForm = () => {
         </div>
       )}
 
-      <h2 className="font-bold text-lg mb-4">Tạo câu hỏi sắp xếp</h2>
+      <h2 className="font-bold text-lg mb-4">{question ? "Chỉnh sửa câu hỏi sắp xếp" : "Tạo câu hỏi sắp xếp"}</h2>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -207,7 +243,7 @@ const ReorderQuestionForm = () => {
           </div>
 
           {/* Nội dung */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-w-[250px]">
             <FormField
               control={form.control}
               name="text"
@@ -243,7 +279,7 @@ const ReorderQuestionForm = () => {
             </div>
 
             <Button type="submit" className="w-full">
-              Lưu câu hỏi
+              {question ? "Cập nhật câu hỏi" : "Lưu câu hỏi"}
             </Button>
           </div>
         </form>

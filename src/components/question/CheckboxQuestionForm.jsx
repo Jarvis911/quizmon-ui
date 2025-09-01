@@ -244,7 +244,7 @@ const CheckboxQuestionForm = ({quizId, question, onSaved}) => {
             )}
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-w-[250px]">
             {/* Text câu hỏi */}
             <FormField
               control={form.control}

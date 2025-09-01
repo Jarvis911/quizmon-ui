@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Check, Plus, Type } from "lucide-react";
+import { Check, Plus, Type, MapIcon } from "lucide-react";
 import axios from "axios";
 import endpoints from "@/api/api";
 
@@ -31,7 +31,8 @@ const QuizEditor = () => {
           media: q.media || [],
           options: q.options || [],
           location: q.location || [],
-          range: q.range || []          
+          range: q.range || [],
+          typeAnswer: q.typeAnswer || []          
         }));
         setQuestions(normalized);
         setActiveIndex(normalized.length ? 0 : null);
@@ -64,7 +65,7 @@ const QuizEditor = () => {
       if (creatingType === "CHECKBOXES")
           return <CheckboxQuestionForm quizId={id} onSaved={handleSaveNew} />
       if (creatingType === "RANGE") 
-          return <TypeAnswerQuestionForm quizId={id} onSaved={handleSaveNew} />
+          return <RangeQuestionForm quizId={id} onSaved={handleSaveNew} />
       if (creatingType === "REORDER")
           return <ReorderQuestionForm quizId={id} onSaved={handleSaveNew} />
       if (creatingType === "TYPEANSWER")
@@ -129,8 +130,8 @@ const QuizEditor = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-250">
-      <main className="flex-1 p-6">
+    <div className="flex flex-col">
+      <main className="flex-1 p-6 absolute top-0 left-[50%] -translate-x-1/2">
         {creatingType != "SELECT" && renderActiveQuestion()}
         {creatingType === "SELECT" && (
           <SelectQuestionType
@@ -145,7 +146,7 @@ const QuizEditor = () => {
         {questions.map((q, i) => (
           <div
             key={q.id}
-            className={`min-w-20 h-20 rounded-xl border-2 cursor-pointer flex items-center justify-center overflow-hidden ${
+            className={`min-w-20 h-20 relative rounded-xl border-2 cursor-pointer flex items-center justify-center overflow-hidden ${
               i === activeIndex ? "border-blue-500" : "border-gray-300"
             }`}
             onClick={() => {
@@ -153,8 +154,10 @@ const QuizEditor = () => {
               setCreatingType(null);
             }}
           >
+            <div className="text-white absolute top-0 left-2">{i + 1}</div>
+
             {/* thumbnail (ảnh/video) */}
-            {q.media.map((m) => {
+            {q.media && q.media.length > 0 ? (q.media.map((m) => {
               if (m.type === "IMAGE") {
                 return <img className="w-16 h-16 rounded-md" src={m.url}></img>;
               }
@@ -177,7 +180,8 @@ const QuizEditor = () => {
                   />
                 );
               }
-            })}
+            })) : (<MapIcon className="w-12 h-12 text-gray-500"></MapIcon>)}
+
           </div>
         ))}
         {/* nút thêm */}

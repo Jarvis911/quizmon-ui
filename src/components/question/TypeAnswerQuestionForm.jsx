@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,6 +7,7 @@ import YoutubePicker from "@/components/picker/YoutubePicker";
 import ImagePicker from "@/components/picker/ImagePicker";
 import { useAuth } from "@/context/AuthContext";
 import { ImageIcon, Youtube, Loader2 } from "lucide-react";
+import endpoints from "@/api/api";
 
 import {
   Form,
@@ -33,7 +34,7 @@ const questionSchema = z.object({
   duration: z.number().optional(),
 });
 
-const TypeAnswerQuestionForm = () => {
+const TypeAnswerQuestionForm = ({ quizId, question, onSaved }) => {
   const { token } = useAuth();
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -53,11 +54,11 @@ const TypeAnswerQuestionForm = () => {
     },
   });
 
-  const removeImage = () => {
-    setImageSrc(null);
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-  };
+  // const removeImage = () => {
+  //   setImageSrc(null);
+  //   setCrop({ x: 0, y: 0 });
+  //   setZoom(1);
+  // };
 
   const getCroppedImg = async () => {
     if (!imageSrc || !croppedAreaPixels) return null;
@@ -91,12 +92,36 @@ const TypeAnswerQuestionForm = () => {
     });
   };
 
+  useEffect(() => {
+      if (question) {
+        form.reset({
+          text: question.text || "",
+          correctAnswer: question.typeAnswer.correctAnswer || "",
+
+          mediaType: question.media?.length
+            ? question.media[0].type === "VIDEO"
+              ? "YOUTUBE"
+              : "IMAGE"
+            : undefined,
+          videoUrl:
+            question.media?.[0]?.type === "VIDEO" ? question.media[0].url : "",
+          startTime: question.media?.[0]?.startTime || 0,
+          duration: question.media?.[0]?.duration || 30,
+        });
+  
+        // Set preview if it is IMAGE
+        if (question.media?.[0]?.type === "IMAGE") {
+          setImageSrc(question.media[0].url);
+        }
+      }
+    }, [question, form]);
+
   const onSubmit = async (values) => {
     try {
       setLoading(true);
 
       const formData = new FormData();
-      formData.append("quizId", 12);
+      formData.append("quizId", quizId);
       formData.append("text", values.text);
       formData.append("type", "TYPEANSWER");
       formData.append("correctAnswer", values.correctAnswer);
@@ -115,16 +140,28 @@ const TypeAnswerQuestionForm = () => {
         formData.append("videos", JSON.stringify(videoData));
       }
 
-      await axios.post("http://localhost:5000/question/typeanswer", formData, {
-        headers: {
-          Authorization: token,
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      if (question?.id) {
+        await axios.put(endpoints.question_typeanswer(question.id), formData, {
+          headers: {
+            Authorization: token,
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
-      alert("Tạo câu hỏi nhập đáp án thành công!");
-      form.reset();
-      removeImage();
+        alert("Cập nhật câu hỏi điền đáp án!");
+      } else {
+        const res = await axios.post(endpoints.question_typeanswers, formData, {
+          headers: {
+            Authorization: token,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        alert("Tạo câu hỏi nhập đáp án thành công!");
+        if (onSaved) onSaved(res.data);
+        // form.reset();
+        // removeImage();
+      }
     } catch (err) {
       console.error(err);
       alert("Lỗi khi tạo câu hỏi");
@@ -141,7 +178,7 @@ const TypeAnswerQuestionForm = () => {
         </div>
       )}
 
-      <h2 className="font-bold text-lg mb-4">Tạo câu hỏi nhập đáp án</h2>
+      <h2 className="font-bold text-lg mb-4">{question ? "Cập nhật câu hỏi nhập đáp án" : "Tạo câu hỏi nhập đáp án"}</h2>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -184,7 +221,7 @@ const TypeAnswerQuestionForm = () => {
           </div>
 
           {/* Nội dung */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-w-[250px]">
             <FormField
               control={form.control}
               name="text"
@@ -214,7 +251,7 @@ const TypeAnswerQuestionForm = () => {
             />
 
             <Button type="submit" className="w-full">
-              Lưu câu hỏi
+              {question ? "Cập nhật câu hỏi" : "Lưu câu hỏi"}
             </Button>
           </div>
         </form>

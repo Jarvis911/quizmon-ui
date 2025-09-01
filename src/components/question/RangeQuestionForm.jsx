@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,6 +7,7 @@ import YoutubePicker from "@/components/picker/YoutubePicker";
 import ImagePicker from "@/components/picker/ImagePicker";
 import { useAuth } from "@/context/AuthContext";
 import { ImageIcon, Youtube, Loader2 } from "lucide-react";
+import endpoints from "@/api/api";
 
 import {
   Form,
@@ -41,7 +42,8 @@ const questionSchema = z
     message: "Giá trị max phải lớn hơn min",
   })
   .refine(
-    (data) => data.correctValue >= data.minValue && data.correctValue <= data.maxValue,
+    (data) =>
+      data.correctValue >= data.minValue && data.correctValue <= data.maxValue,
     {
       path: ["correctValue"],
       message: "Giá trị đúng phải nằm trong khoảng min - max",
@@ -49,13 +51,15 @@ const questionSchema = z
   );
 
 // ---------------- Component ----------------
-const RangeQuestion = () => {
+const RangeQuestion = ({ quizId, question, onSaved }) => {
   const { token } = useAuth();
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  
 
   const form = useForm({
     resolver: zodResolver(questionSchema),
@@ -71,11 +75,11 @@ const RangeQuestion = () => {
     },
   });
 
-  const removeImage = () => {
-    setImageSrc(null);
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-  };
+  // const removeImage = () => {
+  //   setImageSrc(null);
+  //   setCrop({ x: 0, y: 0 });
+  //   setZoom(1);
+  // };
 
   // crop ảnh
   const getCroppedImg = async () => {
@@ -110,12 +114,38 @@ const RangeQuestion = () => {
     });
   };
 
+  useEffect(() => {
+      if (question) {
+        form.reset({
+          text: question.text || "",
+          minValue: question.range.minValue || "",
+          maxValue: question.range.maxValue || "",
+          correctValue: question.range.correctValue || "",
+
+          mediaType: question.media?.length
+            ? question.media[0].type === "VIDEO"
+              ? "YOUTUBE"
+              : "IMAGE"
+            : undefined,
+          videoUrl:
+            question.media?.[0]?.type === "VIDEO" ? question.media[0].url : "",
+          startTime: question.media?.[0]?.startTime || 0,
+          duration: question.media?.[0]?.duration || 30,
+        });
+  
+        // Set preview if it is IMAGE
+        if (question.media?.[0]?.type === "IMAGE") {
+          setImageSrc(question.media[0].url);
+        }
+      }
+    }, [question, form]);
+
   const onSubmit = async (values) => {
     try {
       setLoading(true);
 
       const formData = new FormData();
-      formData.append("quizId", 12);
+      formData.append("quizId", quizId);
       formData.append("text", values.text);
       formData.append("type", "RANGE");
       formData.append("minValue", values.minValue);
@@ -135,17 +165,27 @@ const RangeQuestion = () => {
         };
         formData.append("videos", JSON.stringify(videoData));
       }
+      if (question?.id) {
+        await axios.put(endpoints.question_range(question.id), formData, {
+          headers: {
+            Authorization: token,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        alert("Cập nhật câu hỏi thanh giá trị thành công!");
+      } else {
+        const res = await axios.post(endpoints.question_ranges, formData, {
+          headers: {
+            Authorization: token,
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
-      await axios.post("http://localhost:5000/question/range", formData, {
-        headers: {
-          Authorization: token,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      alert("Tạo câu hỏi thành công!");
-      form.reset();
-      removeImage();
+        alert("Tạo câu hỏi thanh giá trị thành công!");
+        if (onSaved) onSaved(res.data);
+        // form.reset();
+        // removeImage();
+      }
     } catch (err) {
       console.error(err);
       alert("Lỗi khi tạo câu hỏi");
@@ -162,7 +202,7 @@ const RangeQuestion = () => {
         </div>
       )}
 
-      <h2 className="font-bold text-lg mb-4">Tạo câu hỏi Range</h2>
+      <h2 className="font-bold text-lg mb-4">{question ? "Chỉnh sửa câu hỏi thanh giá trị" : "Tạo câu hỏi thanh giá trị"}</h2>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -205,7 +245,7 @@ const RangeQuestion = () => {
           </div>
 
           {/* Inputs */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-w-[250px]">
             {/* Text câu hỏi */}
             <FormField
               control={form.control}
@@ -227,7 +267,7 @@ const RangeQuestion = () => {
                 control={form.control}
                 name="minValue"
                 render={({ field }) => (
-                  <FormItem  className="max-w-70">
+                  <FormItem className="max-w-70">
                     <FormLabel>Giá trị nhỏ nhất</FormLabel>
                     <FormControl>
                       <Input
@@ -253,7 +293,7 @@ const RangeQuestion = () => {
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
-                    <FormMessage/>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -261,7 +301,7 @@ const RangeQuestion = () => {
                 control={form.control}
                 name="correctValue"
                 render={({ field }) => (
-                  <FormItem  className="max-w-70">
+                  <FormItem className="max-w-70">
                     <FormLabel>Giá trị đúng</FormLabel>
                     <FormControl>
                       <Input
@@ -270,7 +310,7 @@ const RangeQuestion = () => {
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
-                    <FormMessage/>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -294,7 +334,7 @@ const RangeQuestion = () => {
             </div>
 
             <Button type="submit" className="w-full">
-              Lưu câu hỏi
+              {question ? "Cập nhật câu hỏi" : "Lưu câu hỏi"}
             </Button>
           </div>
         </form>
