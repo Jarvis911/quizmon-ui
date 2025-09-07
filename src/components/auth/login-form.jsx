@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext"
+import { useNavigate } from "react-router-dom"
 
 export function LoginForm({
   className,
@@ -20,6 +21,7 @@ export function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,10 +29,11 @@ export function LoginForm({
     if (!ok) {
       setError("Login failed, please try again!");
     }
+    navigate("/home");
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("absolute top-30 left-[50%] -translate-x-1/2 flex flex-col gap-6", className)} {...props}>
       <Card className="bg-white/80 backdrop-blur-lg p-8 rounded-2xl shadow-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Welcome back</CardTitle>

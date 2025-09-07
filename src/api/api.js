@@ -7,7 +7,7 @@ const endpoints = {
 
     // Category
     category: `${BASE_URL}/category`,
-    getQuizByCategory: `${BASE_URL}/category/quiz`,
+    getQuizByCategory:(id) => `${BASE_URL}/category/${id}/quiz`,
 
     // Quiz
     quizzes: `${BASE_URL}/quiz`,
@@ -26,7 +26,11 @@ const endpoints = {
     question_reorder: (id) => `${BASE_URL}/question/reorder/${id}`,
     question_range: (id) => `${BASE_URL}/question/range/${id}`,
     question_location: (id) => `${BASE_URL}/question/location/${id}`,
-    question_typeanswer: (id) => `${BASE_URL}/question/typeanswer/${id}`
+    question_typeanswer: (id) => `${BASE_URL}/question/typeanswer/${id}`,
+
+    // Match
+    matches: `${BASE_URL}/match`,
+    match: (id) => `${BASE_URL}/match/${id}`
 }
 
 export default endpoints;

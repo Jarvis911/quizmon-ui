@@ -4,6 +4,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem("user")) || null);
 
   const login = async (email, password) => {
     try {
@@ -22,7 +23,9 @@ export const AuthProvider = ({ children }) => {
 
       const data = await res.json();
       setToken(data.token);
+      setUser(data.user);
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
       return true;
     } catch (err) {
       console.error(err.message);
@@ -47,9 +50,11 @@ export const AuthProvider = ({ children }) => {
 
       const data = await res.json();
 
-      if (data.token) {
-        setToken(data.token);
-        localStorage.setItem("token", data.token);
+      if (data.token && data.user) {
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
       }
       return true;
     } catch (err) {
@@ -61,10 +66,11 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setToken(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ token, login, signup, logout }}>
+    <AuthContext.Provider value={{ token, user, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
