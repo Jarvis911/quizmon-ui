@@ -1,33 +1,36 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress"; 
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableItem } from "@/components/SortableItem"; // Assume you have a SortableItem component
 import Confetti from "react-confetti";
-import { useWindowSize } from "react-use"; 
+import { useWindowSize } from "react-use";
 import ReactPlayer from "react-player";
 
-const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
-  const [selected, setSelected] = useState(null);
-  const [points, setPoints] = useState(1000);
+const ReorderQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
+  const [items, setItems] = useState(question.options.map((opt, idx) => ({ id: idx, text: opt.text })));
   const [isCorrect, setIsCorrect] = useState(null);
   const [explode, setExplode] = useState(false);
   const { width, height } = useWindowSize();
 
-  useEffect(() => {
-    setPoints(Math.floor(1000 * (timer / 30))); 
-  }, [timer]);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     // Reset states when a new question is received
-    setSelected(null);
+    setItems(question.options.map((opt, idx) => ({ id: idx, text: opt.text })));
     setIsCorrect(null);
     setExplode(false);
-  }, [question.id]); 
+  }, [question.id]);
 
   useEffect(() => {
     socket.on("answerSubmitted", ({ questionId }) => {
       if (questionId === question.id) {
-        const expectedPoints = Math.floor(1000 * (timer / 30));
-        console.log(`Submitted with expected points: ${expectedPoints}`);
+        console.log(`Submitted reorder answer`);
       }
     });
 
@@ -41,7 +44,6 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
       }
     });
 
-
     socket.on("error", (message) => {
       console.log("Error:", message);
     });
@@ -49,19 +51,29 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
     return () => {
       socket.off("answerSubmitted");
       socket.off("answerResult");
-      socket.off("updatedScores");
       socket.off("error");
     };
   }, [socket, userId, question.id]);
 
-  const handleSelect = (index) => {
-    if (selected !== null || timer <= 0) return;
-    setSelected(index);
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      setItems((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleSubmit = () => {
+    if (timer <= 0) return;
+    const answer = items.map(item => item.id); // Array of orders
     socket.emit("submitAnswer", {
       matchId,
       userId,
       questionId: question.id,
-      answer: index,
+      answer,
     });
   };
 
@@ -92,13 +104,11 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
                 }}
               />
             ) : (
-              <div className="w-[500px] aspect-[16/9] overflow-hidden rounded-lg">
-                <img
-                  src={media.url}
-                  alt="Question media"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <img
+                src={media.url}
+                alt="Question media"
+                className="w-full h-auto rounded-lg"
+              />
             )}
           </>
         )}
@@ -106,41 +116,30 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
 
       <div className="bg-white/60 backdrop-blur-lg rounded-2xl p-6 shadow-lg text-black flex-1 flex flex-col justify-between">
         <div>
-          <h2 className="min-w-[250px] text-xl font-bold mb-4">
+          <h2 className="min-w-[250px] text-2xl font-bold mb-4">
             {question.text}
           </h2>
- 
-            <div className="space-y-4">
-              {question.options.map((opt, idx) => (
-                <Button
-                  key={idx}
-                  variant={
-                    selected === idx
-                      ? isCorrect === true
-                        ? "success"
-                        : isCorrect === false
-                        ? "destructive"
-                        : "default"
-                      : "outline"
-                  }
-                  className="w-full text-black"
-                  onClick={() => handleSelect(idx)}
-                  disabled={selected !== null || points <= 0}
-                >
-                  {opt.text}
-                </Button>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={items} strategy={verticalListSortingStrategy}>
+              {items.map((item) => (
+                <SortableItem key={item.id} id={item.id}>
+                  {item.text}
+                </SortableItem>
               ))}
-            </div>
+            </SortableContext>
+          </DndContext>
         </div>
+        <Button onClick={handleSubmit} disabled={isCorrect !== null || timer <= 0}>
+          Submit
+        </Button>
       </div>
 
-      {/* Confetti */}
       {explode && (
         <Confetti
           width={width}
           height={height}
           numberOfPieces={500}
-          initialVelocityX={{ min: -10, max: 10 }} 
+          initialVelocityX={{ min: -10, max: 10 }}
           initialVelocityY={10}
           recycle={false}
           run={explode}
@@ -150,4 +149,4 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
   );
 };
 
-export default ButtonQuestionPlay;
+export default ReorderQuestionPlay;

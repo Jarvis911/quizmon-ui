@@ -40,6 +40,7 @@ const MatchLobby = () => {
       setError(message);
     }
 
+    socket.on("gameStarted", () => navigate(`/match/${matchId}/play`));
     socket.on("playerJoined", updatePlayers);
     socket.on("playerLeft", updatePlayers);
     socket.on("error", updateError);
@@ -50,17 +51,18 @@ const MatchLobby = () => {
       socket.off("playerJoined");
       socket.off("playerLeft");
       socket.off("error");
+      socket.off("gameStarted");
     }
   }, [matchId, user.id, user.username, token]);
 
   const startGame = () => {
-    navigate(`/match/${matchId}/play`);
+    socket.emit("startMatch", { matchId });
   };
 
   return (
     <div className="p-6 flex gap-8 absolute left-[50%] -translate-x-1/2 top-30">
       {/* Left: Players and Room Code */}
-      <div className="flex-1 space-y-6 text-gray-300">
+      <div className="flex-1 space-y-6">
         <h2 className="text-2xl font-bold">Phòng thi đấu: {matchId}</h2>
         <p className="">Mã phòng: {matchId} (chia sẻ để bạn bè tham gia)</p>
         {error && (

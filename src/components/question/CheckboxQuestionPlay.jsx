@@ -1,33 +1,28 @@
 import { useState, useEffect } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress"; 
+import { Label } from "@/components/ui/label";
 import Confetti from "react-confetti";
-import { useWindowSize } from "react-use"; 
+import { useWindowSize } from "react-use";
 import ReactPlayer from "react-player";
 
-const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
-  const [selected, setSelected] = useState(null);
-  const [points, setPoints] = useState(1000);
+const CheckboxQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
+  const [selected, setSelected] = useState([]); // Array of selected indices
   const [isCorrect, setIsCorrect] = useState(null);
   const [explode, setExplode] = useState(false);
   const { width, height } = useWindowSize();
 
   useEffect(() => {
-    setPoints(Math.floor(1000 * (timer / 30))); 
-  }, [timer]);
-
-  useEffect(() => {
     // Reset states when a new question is received
-    setSelected(null);
+    setSelected([]);
     setIsCorrect(null);
     setExplode(false);
-  }, [question.id]); 
+  }, [question.id]);
 
   useEffect(() => {
     socket.on("answerSubmitted", ({ questionId }) => {
       if (questionId === question.id) {
-        const expectedPoints = Math.floor(1000 * (timer / 30));
-        console.log(`Submitted with expected points: ${expectedPoints}`);
+        console.log(`Submitted checkbox answer`);
       }
     });
 
@@ -41,7 +36,6 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
       }
     });
 
-
     socket.on("error", (message) => {
       console.log("Error:", message);
     });
@@ -49,20 +43,28 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
     return () => {
       socket.off("answerSubmitted");
       socket.off("answerResult");
-      socket.off("updatedScores");
       socket.off("error");
     };
   }, [socket, userId, question.id]);
 
-  const handleSelect = (index) => {
-    if (selected !== null || timer <= 0) return;
-    setSelected(index);
+  const handleSelect = (idx) => {
+    if (selected.includes(idx)) {
+      setSelected(selected.filter(i => i !== idx));
+    } else {
+      setSelected([...selected, idx]);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (selected.length === 0 || timer <= 0) return;
+    const answer = question.options.map((_, idx) => selected.includes(idx)); // Boolean array
     socket.emit("submitAnswer", {
       matchId,
       userId,
       questionId: question.id,
-      answer: index,
+      answer,
     });
+    setSelected([]); // Lock after submit
   };
 
   const media = question.media?.[0];
@@ -109,38 +111,31 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
           <h2 className="min-w-[250px] text-xl font-bold mb-4">
             {question.text}
           </h2>
- 
-            <div className="space-y-4">
-              {question.options.map((opt, idx) => (
-                <Button
-                  key={idx}
-                  variant={
-                    selected === idx
-                      ? isCorrect === true
-                        ? "success"
-                        : isCorrect === false
-                        ? "destructive"
-                        : "default"
-                      : "outline"
-                  }
-                  className="w-full text-black"
-                  onClick={() => handleSelect(idx)}
-                  disabled={selected !== null || points <= 0}
-                >
-                  {opt.text}
-                </Button>
-              ))}
-            </div>
+          <div className="space-y-4 flex flex-col gap-4 mb-4">
+            {question.options.map((opt, idx) => (
+              <div key={idx} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`option-${idx}`}
+                  checked={selected.includes(idx)}
+                  onCheckedChange={() => handleSelect(idx)}
+                  disabled={isCorrect !== null || timer <= 0}
+                />
+                <Label htmlFor={`option-${idx}`}>{opt.text}</Label>
+              </div>
+            ))}
+          </div>
         </div>
+        <Button onClick={handleSubmit} disabled={selected.length === 0 || isCorrect !== null || timer <= 0}>
+          Submit
+        </Button>
       </div>
 
-      {/* Confetti */}
       {explode && (
         <Confetti
           width={width}
           height={height}
           numberOfPieces={500}
-          initialVelocityX={{ min: -10, max: 10 }} 
+          initialVelocityX={{ min: -10, max: 10 }}
           initialVelocityY={10}
           recycle={false}
           run={explode}
@@ -150,4 +145,4 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
   );
 };
 
-export default ButtonQuestionPlay;
+export default CheckboxQuestionPlay;

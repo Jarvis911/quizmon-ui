@@ -131,7 +131,7 @@ const QuizEditor = () => {
 
   return (
     <div className="flex flex-col">
-      <main className="flex-1 p-6 absolute top-0 left-[50%] -translate-x-1/2">
+      <main className="flex-1 p-6">
         {creatingType != "SELECT" && renderActiveQuestion()}
         {creatingType === "SELECT" && (
           <SelectQuestionType

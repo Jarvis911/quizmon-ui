@@ -151,7 +151,7 @@ const LocationQuestionForm = ({ quizId, question, onSaved }) => {
           </div>
 
           {/* Text câu hỏi */}
-          <div className="flex flex-col gap-4 w-1/2 min-w-[250px]">
+          <div className="flex flex-col gap-4 w-[250px]">
             <FormField
               control={form.control}
               name="text"

@@ -1,4 +1,4 @@
-import { useAuth } from "./AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -146,9 +146,9 @@ const CreateQuizForm = () => {
       });
 
       console.log("Quiz created:", res.data);
+      navigate(`/${res.data.id}/editor`);
       form.reset();
       removeImage();
-      navigate(`quiz/${res.data.id}/add-slide`);
     } catch (err) {
       console.error("Error creating quiz:", err.response?.data || err.message);
       alert("Failed to create quiz");
@@ -159,7 +159,7 @@ const CreateQuizForm = () => {
 
 
   return (  
-    <div className="mx-auto p-6 border rounded-xl shadow-md bg-white/30 backdrop-blur-lg">
+    <div className="p-6 border rounded-xl shadow-md bg-white/30 backdrop-blur-lg">
       {loading && (
         <div className="absolute rounded-xl inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="p-6 bg-white rounded-xl shadow-lg flex flex-col items-center gap-3">
@@ -250,7 +250,7 @@ const CreateQuizForm = () => {
             </div>
 
             {/* Other field */}
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col max-w-[200px] gap-8">
               <FormField
                 control={form.control}
                 name="title"

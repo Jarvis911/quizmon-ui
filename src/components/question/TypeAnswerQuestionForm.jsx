@@ -221,7 +221,7 @@ const TypeAnswerQuestionForm = ({ quizId, question, onSaved }) => {
           </div>
 
           {/* Nội dung */}
-          <div className="flex flex-col gap-4 min-w-[250px]">
+          <div className="flex flex-col gap-4 w-[250px]">
             <FormField
               control={form.control}
               name="text"
