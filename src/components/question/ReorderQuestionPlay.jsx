@@ -2,16 +2,25 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { SortableItem } from "@/components/SortableItem"; // Assume you have a SortableItem component
+import { SortableItem } from "@/components/SortableItem"; 
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import ReactPlayer from "react-player";
 
 const ReorderQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
-  const [items, setItems] = useState(question.options.map((opt, idx) => ({ id: idx, text: opt.text })));
   const [isCorrect, setIsCorrect] = useState(null);
   const [explode, setExplode] = useState(false);
+  const [isWrong, setIsWrong] = useState(false);
   const { width, height } = useWindowSize();
+  const colors = ["bg-red-500/60", "bg-blue-500/60", "bg-green-500/60", "bg-yellow-500/60"];
+
+  const [items, setItems] = useState(
+    question.options.map((opt, idx) => ({
+      id: idx,
+      text: opt.text,
+      color: colors[idx % colors.length], 
+    }))
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -22,9 +31,10 @@ const ReorderQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
 
   useEffect(() => {
     // Reset states when a new question is received
-    setItems(question.options.map((opt, idx) => ({ id: idx, text: opt.text })));
+    setItems(question.options.map((opt, idx) => ({ id: idx, text: opt.text, color: colors[idx % colors.length] })));
     setIsCorrect(null);
     setExplode(false);
+    setIsWrong(false);
   }, [question.id]);
 
   useEffect(() => {
@@ -39,7 +49,10 @@ const ReorderQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
         setIsCorrect(resCorrect);
         if (resCorrect) {
           setExplode(true);
-          setTimeout(() => setExplode(false), 3000);
+          setTimeout(() => setExplode(false), 5000);
+        } else {
+          setIsWrong(true);
+          setTimeout(() => setIsWrong(false), 600);
         }
       }
     });
@@ -79,9 +92,9 @@ const ReorderQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
 
   const media = question.media?.[0];
   const isVideo = media?.type === "VIDEO";
-
+  const wrapperClass = `flex flex-row gap-8 p-6 relative transition ${isWrong ? "bg-red-500/30 shake rounded-2xl" : ""}`;
   return (
-    <div className="flex flex-row gap-8 p-6 relative">
+    <div className={wrapperClass}>
       <div className="flex-1">
         {media && (
           <>
@@ -122,7 +135,7 @@ const ReorderQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={items} strategy={verticalListSortingStrategy}>
               {items.map((item) => (
-                <SortableItem key={item.id} id={item.id}>
+                <SortableItem key={item.id} id={item.id} color={item.color}>
                   {item.text}
                 </SortableItem>
               ))}
@@ -138,7 +151,7 @@ const ReorderQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
         <Confetti
           width={width}
           height={height}
-          numberOfPieces={500}
+          numberOfPieces={600}
           initialVelocityX={{ min: -10, max: 10 }}
           initialVelocityY={10}
           recycle={false}

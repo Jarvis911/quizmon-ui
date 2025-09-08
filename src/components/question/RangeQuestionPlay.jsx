@@ -8,6 +8,7 @@ import ReactPlayer from "react-player";
 const RangeQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
   const [value, setValue] = useState([question.range.minValue]);
   const [isCorrect, setIsCorrect] = useState(null);
+  const [isWrong, setIsWrong] = useState(false);
   const [explode, setExplode] = useState(false);
   const { width, height } = useWindowSize();
 
@@ -15,6 +16,7 @@ const RangeQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
     // Reset states when a new question is received
     setValue([question.range.minValue]);
     setIsCorrect(null);
+    setIsWrong(null);
     setExplode(false);
   }, [question.id]);
 
@@ -30,7 +32,10 @@ const RangeQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
         setIsCorrect(resCorrect);
         if (resCorrect) {
           setExplode(true);
-          setTimeout(() => setExplode(false), 3000);
+          setTimeout(() => setExplode(false), 5000);
+        } else {
+          setIsWrong(true);
+          setTimeout(() => setIsWrong(false), 600)
         }
       }
     });
@@ -60,8 +65,11 @@ const RangeQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
   const media = question.media?.[0];
   const isVideo = media?.type === "VIDEO";
 
+  // For shake animation
+  const wrapperClass = `flex flex-row gap-8 p-6 relative transition ${isWrong ? "bg-red-500/30 shake rounded-2xl" : ""}`;
+
   return (
-    <div className="flex flex-row gap-8 p-6 relative">
+    <div className={wrapperClass}>
       <div className="flex-1">
         {media && (
           <>
