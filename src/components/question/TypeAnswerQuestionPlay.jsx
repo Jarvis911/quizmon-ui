@@ -1,55 +1,19 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Confetti from "react-confetti";
-import { useWindowSize } from "react-use";
-import ReactPlayer from "react-player";
+import QuestionMedia from "./QuestionMedia";
+import useQuestionSocket from "@/hooks/useQuestionSocket.jsx"
 
 const TypeAnswerQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
   const [answer, setAnswer] = useState("");
-  const [isCorrect, setIsCorrect] = useState(null);
-  const [isWrong, setIsWrong] = useState(false);
-  const [explode, setExplode] = useState(false);
-  const { width, height } = useWindowSize();
+  const [submitted, setSubmitted] = useState(null);
+  const { isCorrect, isWrong } = useQuestionSocket(socket, userId, question.id);
 
   useEffect(() => {
     // Reset states when a new question is received
     setAnswer("");
-    setIsCorrect(null);
-    setIsWrong(null);
-    setExplode(false);
+    setSubmitted(null);
   }, [question.id]);
-
-  useEffect(() => {
-    socket.on("answerSubmitted", ({ questionId }) => {
-      if (questionId === question.id) {
-        console.log(`Submitted type answer`);
-      }
-    });
-
-    socket.on("answerResult", ({ userId: resUserId, isCorrect: resCorrect, questionId }) => {
-      if (resUserId === userId && questionId === question.id) {
-        setIsCorrect(resCorrect);
-        if (resCorrect) {
-          setExplode(true);
-          setTimeout(() => setExplode(false), 5000);
-        } else {
-          setIsWrong(true);
-          setTimeout(() => setIsWrong(false), 600)
-        }
-      }
-    });
-
-    socket.on("error", (message) => {
-      console.log("Error:", message);
-    });
-
-    return () => {
-      socket.off("answerSubmitted");
-      socket.off("answerResult");
-      socket.off("error");
-    };
-  }, [socket, userId, question.id]);
 
   const handleSubmit = () => {
     if (!answer.trim() || timer <= 0) return;
@@ -60,48 +24,16 @@ const TypeAnswerQuestionPlay = ({ question, socket, matchId, userId, timer }) =>
       answer: answer.trim(),
     });
     setAnswer(""); // Lock after submit
+    setSubmitted(true);
   };
 
-  const media = question.media?.[0];
-  const isVideo = media?.type === "VIDEO";
   
   // For shake animation
   const wrapperClass = `flex flex-row gap-8 p-6 relative transition ${isWrong ? "bg-red-500/30 shake rounded-2xl" : ""}`;
 
   return (
     <div className={wrapperClass}>
-      <div className="flex-1">
-        {media && (
-          <>
-            {isVideo ? (
-              <ReactPlayer
-                url={media.url}
-                controls={false}
-                playing={true}
-                muted={true}
-                loop={true}
-                width="500px"
-                height="300px"
-                config={{
-                  youtube: {
-                    playerVars: {
-                      start: media.startTime,
-                      end: media.startTime + media.duration,
-                    },
-                  },
-                }}
-              />
-            ) : (
-              <img
-                src={media.url}
-                alt="Question media"
-                className="w-full h-auto rounded-lg"
-              />
-            )}
-          </>
-        )}
-      </div>
-
+      <QuestionMedia media={question.media?.[0]}/>
       <div className="bg-white/60 backdrop-blur-lg rounded-2xl p-6 shadow-lg text-black flex-1 flex flex-col justify-between">
         <div>
           <h2 className="min-w-[250px] text-2xl font-bold mb-4">
@@ -111,25 +43,13 @@ const TypeAnswerQuestionPlay = ({ question, socket, matchId, userId, timer }) =>
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder="Nhập câu trả lời..."
-            disabled={isCorrect !== null || timer <= 0}
+            disabled={submitted || isCorrect !== null || timer <= 0}
           />
         </div>
-        <Button onClick={handleSubmit} disabled={!answer.trim() || isCorrect !== null || timer <= 0}>
+        <Button onClick={handleSubmit} disabled={!answer.trim() || submitted || isCorrect !== null || timer <= 0}>
           Submit
         </Button>
       </div>
-
-      {explode && (
-        <Confetti
-          width={width}
-          height={height}
-          numberOfPieces={500}
-          initialVelocityX={{ min: -10, max: 10 }}
-          initialVelocityY={10}
-          recycle={false}
-          run={explode}
-        />
-      )}
     </div>
   );
 };

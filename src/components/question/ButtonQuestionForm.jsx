@@ -244,14 +244,12 @@ const ButtonQuestionForm = ({ quizId, question, onSaved }) => {
               />
             )}
 
-            {/* Nếu chọn YOUTUBE */}
             {form.watch("mediaType") === "YOUTUBE" && (
               <YoutubePicker form={form} />
             )}
           </div>
 
           <div className="flex flex-col gap-4 w-[250px]">
-            {/* Text câu hỏi */}
             <FormField
               control={form.control}
               name="text"

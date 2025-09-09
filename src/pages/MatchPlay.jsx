@@ -10,6 +10,7 @@ import RangeQuestionPlay from "@/components/question/RangeQuestionPlay";
 import ReorderQuestionPlay from "@/components/question/ReorderQuestionPlay";
 import TypeAnswerQuestionPlay from "@/components/question/TypeAnswerQuestionPlay";
 import LocationQuestionPlay from "@/components/question/LocationQuestionPlay";
+import Leaderboard from "@/components/question/Leaderboard";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -21,27 +22,27 @@ const MatchPlay = () => {
   const [question, setQuestion] = useState(null);
   const [timer, setTimer] = useState(30);
   const [scores, setScores] = useState([]);
-  const [isCorrect, setIsCorrect] = useState(null);
   const [notification, setNotification] = useState(null);
   const [explode, setExplode] = useState(false);
   const [error, setError] = useState(null);
   const { width, height } = useWindowSize();
+  const [gameOver, setGameOver] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
   // Save question to Ref
   const questionRef = useRef(null);
 
   useEffect(() => {
     socket.emit("requestCurrentQuestion", { matchId });
-  }, [matchId, user.id]);
+  }, []);
 
   useEffect(() => {    
     const handleNextQuestion = ({question, timer}) => {
       console.log("⚡ [Client] nextQuestion received:", question);
       setQuestion(question);
       setTimer(timer);
-      setIsCorrect(null);
       setExplode(false);
-      questionRef.current = question;
       setError(null);
+      questionRef.current = question;
     }
 
     const handleTimeUpdate = (remainingTime) => {
@@ -50,21 +51,24 @@ const MatchPlay = () => {
 
     const handleAnswerResult = ({ userId, isCorrect, questionId }) => {
       if (userId === user.id && questionRef.current?.id === questionId) {
-        setIsCorrect(isCorrect);
         if (isCorrect) {
-          setExplode(true);
-          setTimeout(() => setExplode(false), 3000);
+          setExplode(true); 
+          setTimeout(() => setExplode(false), 5000);
         }
       }
     }
 
     const handleUpdateScores = (newScores) => {
-      setScores(newScores);
+       setScores([...newScores]);
     }
 
     const handleGameOver = ({ leaderboard }) => {
-      setNotification(`Game over! Leaderboard: ${JSON.stringify(leaderboard)}`);
-    }
+      console.log("Game over! Leaderboard:", leaderboard);
+      setLeaderboard(leaderboard);
+      setGameOver(true);
+      setNotification("Trận đấu đã kết thúc!");
+      setTimeout(() => setNotification(null), 5000);
+    };
 
     const handleError = ({message}) => {
       setError(message);
@@ -94,72 +98,39 @@ const MatchPlay = () => {
     }
   }, [matchId, user.id]);
 
+  if (gameOver) {
+    return <Leaderboard leaderboard={leaderboard} currentUserId={user.id} />;
+  }
 
   // Render the question
   const renderQuestion = () => {
     if (!question) return <p className="text-center text-gray-500">Đang chờ câu hỏi...</p>;
 
+    const props = {question, socket, matchId, userId: user.id, timer};
     switch (question.type) {
       case "BUTTONS":
-
         return (
-          <ButtonQuestionPlay
-            question={question}
-            socket={socket}
-            matchId={matchId}
-            userId={user.id}
-            timer={timer}
-          />
+          <ButtonQuestionPlay {...props} />
         );
       case "CHECKBOXES":
         return (
-          <CheckboxQuestionPlay
-            question={question}
-            socket={socket}
-            matchId={matchId}
-            userId={user.id}
-            timer={timer}
-          />
+          <CheckboxQuestionPlay {...props} />
         );
       case "RANGE":
         return (
-          <RangeQuestionPlay
-            question={question}
-            socket={socket}
-            matchId={matchId}
-            userId={user.id}
-            timer={timer}
-          />
+          <RangeQuestionPlay {...props} />
         );
       case "REORDER":
         return (
-          <ReorderQuestionPlay
-            question={question}
-            socket={socket}
-            matchId={matchId}
-            userId={user.id}
-            timer={timer}
-          />
+          <ReorderQuestionPlay {...props} />
         );
       case "TYPEANSWER":
         return (
-          <TypeAnswerQuestionPlay
-            question={question}
-            socket={socket}
-            matchId={matchId}
-            userId={user.id}
-            timer={timer}
-          />
+          <TypeAnswerQuestionPlay {...props} />
         );
       case "LOCATION":
         return (
-          <LocationQuestionPlay
-            question={question}
-            socket={socket}
-            matchId={matchId}
-            userId={user.id}
-            timer={timer}
-          />
+          <LocationQuestionPlay {...props} />
         );
 
       default:
@@ -181,7 +152,7 @@ const MatchPlay = () => {
       )}
       <div className="flex justify-between mb-4">
         <h2 className="text-2xl font-bold">Phòng thi đấu: {matchId}</h2>
-        <Card className="w-1/3">
+        <Card className="w-1/3 bg-white/70">
           <CardHeader>
             <CardTitle>Bảng điểm</CardTitle>
           </CardHeader>
@@ -200,15 +171,16 @@ const MatchPlay = () => {
         <p className="text-center mb-4">Điểm: {((timer / 30)*1000).toFixed(0)}</p>
         {renderQuestion()}
         {explode && (
-          <Confetti
-            width={width}
-            height={height}
-            numberOfPieces={200}
-            initialVelocityX={{ min: -10, max: 10 }}
-            initialVelocityY={10}
-            recycle={false}
-            run={explode}
-          />
+          <div className="w-full h-full overflow-hidden">
+            <Confetti
+              width={width}
+              height={height}
+              gravity={0.4}
+              recycle={false}
+              numberOfPieces={500}
+              run={explode}
+            />
+          </div>
         )}
       </div>
     </div>

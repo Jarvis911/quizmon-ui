@@ -10,8 +10,6 @@ import {
 } from "react-leaflet";
 import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
-import Confetti from "react-confetti";
-import { useWindowSize } from "react-use";
 
 function LocationPicker({ setLocation }) {
   useMapEvents({
@@ -44,14 +42,13 @@ const LocationQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
   const [location, setLocation] = useState(null);
   const [correctLocation, setCorrectLocation] = useState(null);
   const [isCorrect, setIsCorrect] = useState(null);
-  const [explode, setExplode] = useState(false);
-  const { width, height } = useWindowSize();
+  const [submitted, setSubmitted] = useState(null);
 
   useEffect(() => {
     // Reset states when a new question is received
     setLocation(null);
     setIsCorrect(null);
-    setExplode(false);
+    setSubmitted(null);
   }, [question.id]);
 
   useEffect(() => {
@@ -77,10 +74,6 @@ const LocationQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
               lon: correctLatLon.longitude,
             });
           }
-          if (resCorrect) {
-            setExplode(true);
-            setTimeout(() => setExplode(false), 3000);
-          }
         }
       }
     );
@@ -104,7 +97,7 @@ const LocationQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
       questionId: question.id,
       answer: location, // { lat, lon }
     });
-
+    setSubmitted(true);
     setTimeout(() => setLocation(null), 7000); 
   };
 
@@ -168,24 +161,11 @@ const LocationQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
         <Button
           className="w-full"
           onClick={handleSubmit}
-          disabled={!location || isCorrect !== null || timer <= 0}
+          disabled={submitted || !location || isCorrect !== null || timer <= 0}
         >
           Submit
         </Button>
       </div>
-
-      {/* Hiệu ứng khi đúng */}
-      {explode && (
-        <Confetti
-          width={width}
-          height={height}
-          numberOfPieces={500}
-          initialVelocityX={{ min: -10, max: 10 }}
-          initialVelocityY={10}
-          recycle={false}
-          run={explode}
-        />
-      )}
     </div>
   );
 };

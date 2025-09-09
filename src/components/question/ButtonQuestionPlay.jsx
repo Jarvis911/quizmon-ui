@@ -1,58 +1,16 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress"; 
-import Confetti from "react-confetti";
-import { useWindowSize } from "react-use"; 
-import ReactPlayer from "react-player";
+import useQuestionSocket from "@/hooks/useQuestionSocket.jsx"
+import QuestionMedia from "./QuestionMedia";
 
 const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
   const [selected, setSelected] = useState(null);
-  const [points, setPoints] = useState(1000);
-  const [isCorrect, setIsCorrect] = useState(null);
-  const [explode, setExplode] = useState(false);
-  const { width, height } = useWindowSize();
-
-  useEffect(() => {
-    setPoints(Math.floor(1000 * (timer / 30))); 
-  }, [timer]);
+  const { isCorrect, isWrong } = useQuestionSocket(socket, userId, question.id);
 
   useEffect(() => {
     // Reset states when a new question is received
     setSelected(null);
-    setIsCorrect(null);
-    setExplode(false);
   }, [question.id]); 
-
-  useEffect(() => {
-    socket.on("answerSubmitted", ({ questionId }) => {
-      if (questionId === question.id) {
-        const expectedPoints = Math.floor(1000 * (timer / 30));
-        console.log(`Submitted with expected points: ${expectedPoints}`);
-      }
-    });
-
-    socket.on("answerResult", ({ userId: resUserId, isCorrect: resCorrect, questionId }) => {
-      if (resUserId === userId && questionId === question.id) {
-        setIsCorrect(resCorrect);
-        if (resCorrect) {
-          setExplode(true);
-          setTimeout(() => setExplode(false), 3000);
-        }
-      }
-    });
-
-
-    socket.on("error", (message) => {
-      console.log("Error:", message);
-    });
-
-    return () => {
-      socket.off("answerSubmitted");
-      socket.off("answerResult");
-      socket.off("updatedScores");
-      socket.off("error");
-    };
-  }, [socket, userId, question.id]);
 
   const handleSelect = (index) => {
     if (selected !== null || timer <= 0) return;
@@ -65,45 +23,11 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
     });
   };
 
-  const media = question.media?.[0];
-  const isVideo = media?.type === "VIDEO";
+  const wrapperClass = `flex flex-row gap-8 p-6 relative transition ${isWrong ? "bg-red-500/30 shake rounded-2xl" : ""}`;
 
   return (
-    <div className="flex flex-row gap-8 p-6 relative">
-      <div className="flex-1">
-        {media && (
-          <>
-            {isVideo ? (
-              <ReactPlayer
-                url={media.url}
-                controls={false}
-                playing={true}
-                muted={true}
-                loop={true}
-                width="500px"
-                height="300px"
-                config={{
-                  youtube: {
-                    playerVars: {
-                      start: media.startTime,
-                      end: media.startTime + media.duration,
-                    },
-                  },
-                }}
-              />
-            ) : (
-              <div className="w-[500px] aspect-[16/9] overflow-hidden rounded-lg">
-                <img
-                  src={media.url}
-                  alt="Question media"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
+    <div className={wrapperClass}>
+      <QuestionMedia media={question.media?.[0]}/>
       <div className="bg-white/60 backdrop-blur-lg rounded-2xl p-6 shadow-lg text-black flex-1 flex flex-col justify-between">
         <div>
           <h2 className="min-w-[250px] text-xl font-bold mb-4">
@@ -125,7 +49,7 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
                   }
                   className="w-full text-black"
                   onClick={() => handleSelect(idx)}
-                  disabled={selected !== null || points <= 0}
+                  disabled={selected !== null || timer <= 0}
                 >
                   {opt.text}
                 </Button>
@@ -133,19 +57,6 @@ const ButtonQuestionPlay = ({ question, socket, matchId, userId, timer }) => {
             </div>
         </div>
       </div>
-
-      {/* Confetti */}
-      {explode && (
-        <Confetti
-          width={width}
-          height={height}
-          numberOfPieces={500}
-          initialVelocityX={{ min: -10, max: 10 }} 
-          initialVelocityY={10}
-          recycle={false}
-          run={explode}
-        />
-      )}
     </div>
   );
 };

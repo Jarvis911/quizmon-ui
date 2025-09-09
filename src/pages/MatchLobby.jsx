@@ -50,7 +50,7 @@ const MatchLobby = () => {
     return () => {
       socket.off("playerJoined");
       socket.off("playerLeft");
-      socket.off("error");
+      socket.off("error", updateError);
       socket.off("gameStarted");
     }
   }, [matchId, user.id, user.username, token]);
