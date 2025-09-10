@@ -74,7 +74,7 @@ const Home = () => {
   const renderQuizCard = (quiz) => (
     <Card
       key={quiz.id}
-      className="relative min-w-[200px] group cursor-pointer bg-white/70 backdrop-blur-md"
+      className="relative justify-between min-w-[200px] group cursor-pointer bg-white/70 backdrop-blur-md"
     >
       <CardHeader>
         <CardTitle>{quiz.title}</CardTitle>

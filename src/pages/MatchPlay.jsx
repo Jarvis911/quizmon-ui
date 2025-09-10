@@ -11,6 +11,7 @@ import ReorderQuestionPlay from "@/components/question/ReorderQuestionPlay";
 import TypeAnswerQuestionPlay from "@/components/question/TypeAnswerQuestionPlay";
 import LocationQuestionPlay from "@/components/question/LocationQuestionPlay";
 import Leaderboard from "@/components/question/Leaderboard";
+import { Howl } from "howler";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -30,6 +31,21 @@ const MatchPlay = () => {
   const [leaderboard, setLeaderboard] = useState([]);
   // Save question to Ref
   const questionRef = useRef(null);
+  const backgroundMusicRef = useRef(null);
+
+  useEffect(() => {
+    backgroundMusicRef.current = new Howl({
+      src: ["/audio/background.mp3"],
+      loop: true,
+      volume: 0.05, 
+      autoplay: true,
+    });
+
+    return () => {
+      backgroundMusicRef.current.stop();
+      backgroundMusicRef.current.unload();
+    };
+  }, []);
 
   useEffect(() => {
     socket.emit("requestCurrentQuestion", { matchId });
@@ -63,6 +79,7 @@ const MatchPlay = () => {
     }
 
     const handleGameOver = ({ leaderboard }) => {
+      backgroundMusicRef.current.stop();
       console.log("Game over! Leaderboard:", leaderboard);
       setLeaderboard(leaderboard);
       setGameOver(true);

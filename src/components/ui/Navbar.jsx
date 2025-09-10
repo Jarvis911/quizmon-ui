@@ -3,13 +3,19 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/context/AuthContext";
-import { Plus } from "lucide-react"
+import { Plus, LogOut } from "lucide-react"
 import { useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const { token } = useAuth();
+  const { token, user, logout } = useAuth();
   const [code, setCode] = useState("");
   const navigate = useNavigate();
 
@@ -38,6 +44,15 @@ export default function Navbar() {
      navigate(`/home`);
   }
 
+  const handleLogin = () => {
+    navigate(`/login`);
+  };
+
+  const handleLogout = () => {
+    logout(); 
+    navigate(`/home`); 
+  };
+
   return (
     <nav
       className={`fixed top-0 left-0 w-full h-16 flex items-center justify-between px-6 z-50 transition-all 
@@ -62,16 +77,35 @@ export default function Navbar() {
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
-          className="rounded-full p-2 bg-orange-500 hover:bg-orange-600 cursor-pointer text-white"
+          className="rounded-full p-4 bg-orange-500 hover:bg-orange-600 cursor-pointer text-white"
           onClick={handleCreateQuiz}
         >
-          Create quiz now!
+          Tạo quiz!
         </Button>
 
-        <Avatar className="cursor-pointer">
-          <AvatarImage src="https://github.com/shadcn.png" alt="@user" />
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
+        {token ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Avatar className="cursor-pointer">
+                <AvatarImage src={user?.avatar || "https://github.com/shadcn.png"} alt="@user" />
+                <AvatarFallback>{user?.username?.[0] || "U"}</AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-24">
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                <LogOut className="w-4 h-4 mr-2" />
+                Đăng xuất
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button
+            className="bg-orange-500 hover:bg-orange-400 text-white"
+            onClick={handleLogin}
+          >
+            Đăng nhập
+          </Button>
+        )}
       </div>
     </nav>
   )

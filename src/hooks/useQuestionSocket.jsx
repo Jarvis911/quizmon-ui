@@ -1,9 +1,19 @@
 // useQuestionSocket.js (Custom hook để tối ưu hóa xử lý WebSocket chung)
 import { useEffect, useState } from "react";
+import { Howl } from "howler";
 
 const useQuestionSocket = (socket, userId, questionId, onCorrect = () => {}, onIncorrect = () => {}) => {
   const [isCorrect, setIsCorrect] = useState(null);
   const [isWrong, setIsWrong] = useState(false);
+
+  const correctSound = new Howl({
+    src: ["/audio/correct.mp3"],
+    volume: 0.5,
+  });
+  const incorrectSound = new Howl({
+    src: ["/audio/incorrect.mp3"],
+    volume: 0.5,
+  });
 
   useEffect(() => {
     const handleAnswerSubmitted = ({ questionId: qId }) => {
@@ -16,8 +26,10 @@ const useQuestionSocket = (socket, userId, questionId, onCorrect = () => {}, onI
       if (resUserId === userId && qId === questionId) {
         setIsCorrect(resCorrect);
         if (resCorrect) {
+          correctSound.play()
           onCorrect();
         } else {
+          incorrectSound.play()
           setIsWrong(true);
           setTimeout(() => setIsWrong(false), 600);
           onIncorrect();

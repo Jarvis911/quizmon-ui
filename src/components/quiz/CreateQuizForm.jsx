@@ -7,6 +7,7 @@ import axios from "axios";
 import { useEffect, useState, useCallback } from "react";
 import Cropper from "react-easy-crop";
 import { Upload, Loader2 } from "lucide-react";
+import endpoints from "@/api/api"
 
 import {
   Form,
@@ -62,7 +63,7 @@ const CreateQuizForm = () => {
 
   // Fetch categories
   useEffect(() => {
-    axios.get("http://localhost:5000/category").then((res) => {
+    axios.get(endpoints.category).then((res) => {
       setCategories(res.data);
     });
   }, []);
@@ -138,17 +139,19 @@ const CreateQuizForm = () => {
         formData.append("file", croppedBlob, "image.jpg");
       }
 
-      const res = await axios.post("http://localhost:5000/quiz", formData, {
+      const res = await axios.post(endpoints.quizzes, formData, {
         headers: {
           Authorization: `${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log("Quiz created:", res.data);
-      navigate(`/${res.data.id}/editor`);
+      console.log("Quiz created:", res.data.id);
       form.reset();
       removeImage();
+      if (res.data.id) {
+        navigate(`quiz/${res.data.id}/editor`);
+      }
     } catch (err) {
       console.error("Error creating quiz:", err.response?.data || err.message);
       alert("Failed to create quiz");
