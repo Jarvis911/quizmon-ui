@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import socket from "@/services/socket.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ButtonQuestionPlay from "@/components/question/ButtonQuestionPlay";
 import CheckboxQuestionPlay from "@/components/question/CheckboxQuestionPlay";
@@ -16,7 +17,6 @@ import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-
 const MatchPlay = () => {
   const { id: matchId } = useParams();
   const { user } = useAuth();
@@ -26,18 +26,20 @@ const MatchPlay = () => {
   const [notification, setNotification] = useState(null);
   const [explode, setExplode] = useState(false);
   const [error, setError] = useState(null);
-  const { width, height } = useWindowSize();
   const [gameOver, setGameOver] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [isTTSEnabled, setIsTTSEnabled] = useState(true);
   // Save question to Ref
   const questionRef = useRef(null);
   const backgroundMusicRef = useRef(null);
+
+  const { width, height } = useWindowSize();
 
   useEffect(() => {
     backgroundMusicRef.current = new Howl({
       src: ["/audio/background.mp3"],
       loop: true,
-      volume: 0.05, 
+      volume: 0.03,
       autoplay: true,
     });
 
@@ -51,32 +53,32 @@ const MatchPlay = () => {
     socket.emit("requestCurrentQuestion", { matchId });
   }, []);
 
-  useEffect(() => {    
-    const handleNextQuestion = ({question, timer}) => {
+  useEffect(() => {
+    const handleNextQuestion = ({ question, timer }) => {
       console.log("⚡ [Client] nextQuestion received:", question);
       setQuestion(question);
       setTimer(timer);
       setExplode(false);
       setError(null);
       questionRef.current = question;
-    }
+    };
 
     const handleTimeUpdate = (remainingTime) => {
       setTimer(remainingTime);
-    }
+    };
 
     const handleAnswerResult = ({ userId, isCorrect, questionId }) => {
       if (userId === user.id && questionRef.current?.id === questionId) {
         if (isCorrect) {
-          setExplode(true); 
+          setExplode(true);
           setTimeout(() => setExplode(false), 5000);
         }
       }
-    }
+    };
 
     const handleUpdateScores = (newScores) => {
-       setScores([...newScores]);
-    }
+      setScores([...newScores]);
+    };
 
     const handleGameOver = ({ leaderboard }) => {
       backgroundMusicRef.current.stop();
@@ -87,14 +89,14 @@ const MatchPlay = () => {
       setTimeout(() => setNotification(null), 5000);
     };
 
-    const handleError = ({message}) => {
+    const handleError = ({ message }) => {
       setError(message);
-    }
+    };
 
-    const handleNotification = ({message}) => {
+    const handleNotification = ({ message }) => {
       setNotification(message);
       setTimeout(() => setNotification(null), 5000);
-    }
+    };
 
     socket.on("nextQuestion", handleNextQuestion);
     socket.on("timeUpdate", handleTimeUpdate);
@@ -112,8 +114,55 @@ const MatchPlay = () => {
       socket.off("gameOver", handleGameOver);
       socket.off("error", handleError);
       socket.off("notification", handleNotification);
-    }
+    };
   }, [matchId, user.id]);
+
+  useEffect(() => {
+    if (isTTSEnabled && question?.text) {
+      speakQuestion(question.text);
+    }
+  }, [question, isTTSEnabled]);
+
+  const toggleTTS = () => {
+    setIsTTSEnabled((prev) => !prev);
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
+  const speakQuestion = (text) => {
+    if (!window.speechSynthesis) {
+      console.warn(
+        "[MatchPlay] Web Speech API không được hỗ trợ trên trình duyệt này"
+      );
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "vi-VN";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    const voices = window.speechSynthesis.getVoices();
+
+    voices.forEach((v, i) => {
+      console.log(i, v.name, v.lang, v.localService);
+    });
+
+    const vietnameseVoice = voices.find((voice) => voice.lang === "vi-VN");
+    if (vietnameseVoice) {
+      utterance.voice = vietnameseVoice;
+    } else {
+      console.warn(
+        "[MatchPlay] Không tìm thấy giọng tiếng Việt, dùng giọng mặc định"
+      );
+    }
+
+    window.speechSynthesis.speak(utterance);
+  };
 
   if (gameOver) {
     return <Leaderboard leaderboard={leaderboard} currentUserId={user.id} />;
@@ -121,34 +170,23 @@ const MatchPlay = () => {
 
   // Render the question
   const renderQuestion = () => {
-    if (!question) return <p className="text-center text-gray-500">Đang chờ câu hỏi...</p>;
+    if (!question)
+      return <p className="text-center text-gray-500">Đang chờ câu hỏi...</p>;
 
-    const props = {question, socket, matchId, userId: user.id, timer};
+    const props = { question, socket, matchId, userId: user.id, timer };
     switch (question.type) {
       case "BUTTONS":
-        return (
-          <ButtonQuestionPlay {...props} />
-        );
+        return <ButtonQuestionPlay {...props} />;
       case "CHECKBOXES":
-        return (
-          <CheckboxQuestionPlay {...props} />
-        );
+        return <CheckboxQuestionPlay {...props} />;
       case "RANGE":
-        return (
-          <RangeQuestionPlay {...props} />
-        );
+        return <RangeQuestionPlay {...props} />;
       case "REORDER":
-        return (
-          <ReorderQuestionPlay {...props} />
-        );
+        return <ReorderQuestionPlay {...props} />;
       case "TYPEANSWER":
-        return (
-          <TypeAnswerQuestionPlay {...props} />
-        );
+        return <TypeAnswerQuestionPlay {...props} />;
       case "LOCATION":
-        return (
-          <LocationQuestionPlay {...props} />
-        );
+        return <LocationQuestionPlay {...props} />;
 
       default:
         return <p className="text-red-500">Loại câu hỏi không hỗ trợ</p>;
@@ -168,7 +206,13 @@ const MatchPlay = () => {
         </Alert>
       )}
       <div className="flex justify-between mb-4">
-        <h2 className="text-2xl font-bold">Phòng thi đấu: {matchId}</h2>
+        <div className="flex flex-col">
+          <h2 className="text-2xl font-bold">Phòng thi đấu: {matchId}</h2>
+          <Button className="mt-4" variant="secondary" onClick={toggleTTS}>
+            {isTTSEnabled ? "Tắt giọng nói" : "Bật giọng nói"}
+          </Button>
+        </div>
+
         <Card className="w-1/3 bg-white/70">
           <CardHeader>
             <CardTitle>Bảng điểm</CardTitle>
@@ -184,8 +228,10 @@ const MatchPlay = () => {
         </Card>
       </div>
       <div>
-        <Progress value={(timer / 30) * 100} className="mb-4"/>
-        <p className="text-center mb-4">Điểm: {((timer / 30)*1000).toFixed(0)}</p>
+        <Progress value={(timer / 30) * 100} className="mb-4" />
+        <p className="text-center mb-4">
+          Điểm: {((timer / 30) * 1000).toFixed(0)}
+        </p>
         {renderQuestion()}
         {explode && (
           <div className="w-full h-full overflow-hidden">

@@ -21,7 +21,7 @@ function LocationPicker({ setLocation }) {
 }
 
 const arrowIcon = new Icon({
-  iconUrl: "https://res.cloudinary.com/dpfbtypxx/image/upload/v1757273366/QuizMonLogo-removebg-preview_uf1xp4.png",   
+  iconUrl: "https://res.cloudinary.com/dpfbtypxx/image/upload/v1757436540/ChatGPT_Image_Aug_17__2025__12_27_39_PM-removebg-preview_ginjv1.png",   
   iconSize: [80, 80],     
   iconAnchor: [40, 40],   
 });

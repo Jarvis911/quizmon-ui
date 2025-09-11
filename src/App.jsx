@@ -13,7 +13,7 @@ import Galaxy from "@/components/ui/bg-galaxy.jsx";
 function App() {
   return (
     <BrowserRouter>
-<div className="flex justify-center items-center w-full h-full py-[60px] min-h-screen
+<div className="w-full h-full py-[60px] min-h-screen
   bg-[radial-gradient(ellipse_at_top_left,theme(colors.red.300),theme(colors.yellow.200),theme(colors.orange.300))]">
       <AuthProvider>
         <Navbar/>

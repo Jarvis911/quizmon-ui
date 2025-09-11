@@ -162,7 +162,8 @@ const CreateQuizForm = () => {
 
 
   return (  
-    <div className="p-6 border rounded-xl shadow-md bg-white/30 backdrop-blur-lg">
+    <div className="flex justify-center">
+    <div className="inline-flex flex-col p-6 mt-5 border rounded-xl shadow-md bg-white/30 backdrop-blur-lg ">
       {loading && (
         <div className="absolute rounded-xl inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="p-6 bg-white rounded-xl shadow-lg flex flex-col items-center gap-3">
@@ -330,6 +331,7 @@ const CreateQuizForm = () => {
           </div>
         </form>
       </Form>
+    </div>
     </div>
   );
 };
