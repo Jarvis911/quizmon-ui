@@ -1,10 +1,4 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
-import socket from "@/services/socket.jsx";
-import { useAuth } from "@/context/AuthContext.jsx";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// Question components
 import ButtonQuestionPlay from "@/components/question/ButtonQuestionPlay";
 import CheckboxQuestionPlay from "@/components/question/CheckboxQuestionPlay";
 import RangeQuestionPlay from "@/components/question/RangeQuestionPlay";
@@ -12,10 +6,20 @@ import ReorderQuestionPlay from "@/components/question/ReorderQuestionPlay";
 import TypeAnswerQuestionPlay from "@/components/question/TypeAnswerQuestionPlay";
 import LocationQuestionPlay from "@/components/question/LocationQuestionPlay";
 import Leaderboard from "@/components/question/Leaderboard";
+// Hook 
+import { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext.jsx";
+// UI Components
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import socket from "@/services/socket.jsx";
 import { Howl } from "howler";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 
 const MatchPlay = () => {
   const { id: matchId } = useParams();
@@ -32,9 +36,9 @@ const MatchPlay = () => {
   // Save question to Ref
   const questionRef = useRef(null);
   const backgroundMusicRef = useRef(null);
-
   const { width, height } = useWindowSize();
 
+  // Use effect to set background music
   useEffect(() => {
     backgroundMusicRef.current = new Howl({
       src: ["/audio/background.mp3"],
@@ -49,10 +53,12 @@ const MatchPlay = () => {
     };
   }, []);
 
+  // Send the first question to fix bug don't send first question
   useEffect(() => {
     socket.emit("requestCurrentQuestion", { matchId });
   }, []);
 
+  // Handle next question, time update, answer result, update score, game over, error, notification
   useEffect(() => {
     const handleNextQuestion = ({ question, timer }) => {
       console.log("⚡ [Client] nextQuestion received:", question);
@@ -117,6 +123,7 @@ const MatchPlay = () => {
     };
   }, [matchId, user.id]);
 
+  // Handle voice speak
   useEffect(() => {
     if (isTTSEnabled && question?.text) {
       speakQuestion(question.text);
@@ -148,10 +155,6 @@ const MatchPlay = () => {
 
     const voices = window.speechSynthesis.getVoices();
 
-    voices.forEach((v, i) => {
-      console.log(i, v.name, v.lang, v.localService);
-    });
-
     const vietnameseVoice = voices.find((voice) => voice.lang === "vi-VN");
     if (vietnameseVoice) {
       utterance.voice = vietnameseVoice;
@@ -160,9 +163,10 @@ const MatchPlay = () => {
         "[MatchPlay] Không tìm thấy giọng tiếng Việt, dùng giọng mặc định"
       );
     }
-
     window.speechSynthesis.speak(utterance);
   };
+
+  // Show leader board when game over
 
   if (gameOver) {
     return <Leaderboard leaderboard={leaderboard} currentUserId={user.id} />;

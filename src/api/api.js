@@ -12,6 +12,8 @@ const endpoints = {
     // Quiz
     quizzes: `${BASE_URL}/quiz`,
     quiz: (id) => `${BASE_URL}/quiz/${id}`,
+    quiz_rating: (id) => `${BASE_URL}/quiz/${id}/rating`,
+    quiz_isRated: (id) => `${BASE_URL}/quiz/${id}/rated`,
 
     // Question
     question_buttons: `${BASE_URL}/question/buttons`,
@@ -30,7 +32,10 @@ const endpoints = {
 
     // Match
     matches: `${BASE_URL}/match`,
-    match: (id) => `${BASE_URL}/match/${id}`
+    match: (id) => `${BASE_URL}/match/${id}`,
+
+    //Rating:
+    rating: `${BASE_URL}/rating`
 }
 
 export default endpoints;

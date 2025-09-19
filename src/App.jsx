@@ -8,13 +8,14 @@ import CreateQuizForm from "@/components/quiz/CreateQuizForm.jsx"
 import { SignUpForm } from "@/components/auth/signup-form.jsx";
 import { AuthProvider } from "@/context/AuthContext";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Galaxy from "@/components/ui/bg-galaxy.jsx";
+// import Galaxy from "@/components/ui/bg-galaxy.jsx";
 
 function App() {
   return (
     <BrowserRouter>
-<div className="w-full h-full py-[60px] min-h-screen
-  bg-[radial-gradient(ellipse_at_top_left,theme(colors.red.300),theme(colors.yellow.200),theme(colors.orange.300))]">
+<div className="w-full h-full py-[60px] min-h-screen">
+    <div className="fixed inset-0 -z-10 
+    bg-[radial-gradient(ellipse_at_top_left,theme(colors.red.300),theme(colors.yellow.200),theme(colors.orange.300))]" />
       <AuthProvider>
         <Navbar/>
         <Routes>

@@ -103,7 +103,7 @@ const Home = () => {
             <img
               src={quiz.image}
               alt={quiz.title}
-              className="w-full h-24 object-cover rounded"
+              className="w-full h-26 object-cover rounded"
             />
           )}
           <div className="mt-2 flex flex-row justify-between items-center gap-1">
@@ -113,8 +113,8 @@ const Home = () => {
                 4/5
               </span>
             </div>
-            <p className="text-sm text-gray-600 truncate">
-              By {quiz.creator.username}
+            <p className="text-xs  text-gray-600 truncate">
+              by {quiz.creator.username}
             </p>
           </div>
         </CardContent>

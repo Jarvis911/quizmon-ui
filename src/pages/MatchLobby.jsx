@@ -1,14 +1,16 @@
-// src/pages/MatchLobby.jsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "@/services/socket";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import endpoints from "@/api/api";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+
 
 const MatchLobby = () => {
   const { id: matchId } = useParams();
@@ -18,6 +20,7 @@ const MatchLobby = () => {
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
 
   useEffect(() => {
     const fetchMatch = async () => {
@@ -58,6 +61,7 @@ const MatchLobby = () => {
   const startGame = () => {
     socket.emit("startMatch", { matchId });
   };
+
 
   return (
     <div className="p-6 flex gap-8 absolute left-[50%] -translate-x-1/2 top-30">
