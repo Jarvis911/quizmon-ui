@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/context/AuthContext";
-import { Plus, LogOut } from "lucide-react"
+import { Plus, LogOut, TrendingUp } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -53,6 +53,9 @@ export default function Navbar() {
     navigate(`/home`); 
   };
 
+  const handleNavigateUserStatistics = () => {
+    navigate(`/statistics`);
+  }
   return (
     <nav
       className={`fixed top-0 left-0 w-full h-16 flex items-center justify-between px-6 z-50 transition-all 
@@ -95,6 +98,10 @@ export default function Navbar() {
               <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                 <LogOut className="w-4 h-4 mr-2" />
                 Đăng xuất
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleNavigateUserStatistics} className="cursor-pointer">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Xem lịch sử đấu
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

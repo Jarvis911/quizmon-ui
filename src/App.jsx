@@ -5,6 +5,7 @@ import Home from "@/pages/Home.jsx";
 import MatchLobby from "./pages/MatchLobby";
 import MatchPlay from "./pages/MatchPlay";
 import CreateQuizForm from "@/components/quiz/CreateQuizForm.jsx"
+import UserStats from "./pages/UserStatistics";
 import { SignUpForm } from "@/components/auth/signup-form.jsx";
 import { AuthProvider } from "@/context/AuthContext";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -26,6 +27,7 @@ function App() {
           <Route path="/match/:id/lobby" element={<MatchLobby/>} />
           <Route path="/match/:id/play" element={<MatchPlay/>} />
           <Route path="/quiz" element={<CreateQuizForm/>}/>
+          <Route path="/statistics" element={<UserStats/>}/>
         </Routes>
       </AuthProvider>
     </div>

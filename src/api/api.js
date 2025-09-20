@@ -34,8 +34,11 @@ const endpoints = {
     matches: `${BASE_URL}/match`,
     match: (id) => `${BASE_URL}/match/${id}`,
 
-    //Rating:
-    rating: `${BASE_URL}/rating`
+    //Rating
+    rating: `${BASE_URL}/rating`,
+
+    //User
+    user_stats: `${BASE_URL}/user/statistics`
 }
 
 export default endpoints;

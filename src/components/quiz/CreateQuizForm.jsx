@@ -150,7 +150,7 @@ const CreateQuizForm = () => {
       form.reset();
       removeImage();
       if (res.data.id) {
-        navigate(`quiz/${res.data.id}/editor`);
+        navigate(`/${res.data.id}/editor`);
       }
     } catch (err) {
       console.error("Error creating quiz:", err.response?.data || err.message);
