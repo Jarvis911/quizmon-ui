@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState, FormEvent, HTMLAttributes } from "react"
+import { Input } from "./input"
+import { Button } from "./button"
+import { Avatar, AvatarFallback, AvatarImage } from "./avatar"
+import { useAuth } from "../../context/AuthContext";
 import { Plus, LogOut, TrendingUp } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import {
@@ -10,7 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "./dropdown-menu";
 
 
 export default function Navbar() {
@@ -70,16 +70,17 @@ export default function Navbar() {
           type="text"
           placeholder="Nhập mã phòng để tham gia..."
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e: FormEvent) => setCode(e.target as HTMLAttributes)}
           className="w-full border-2 border-orange-400 focus:border-red-500 focus:ring-0"
         />
-        <Button className="bg-orange-600 cursor-pointer" onClick={handleJoinCode}>Tham gia</Button>
+        <Button className="bg-orange-600 cursor-pointer" variant="default" size="lg" onClick={handleJoinCode}>Tham gia</Button>
       </div>
 
       {/* Right - Avatar + New Quiz */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
+          size="default"
           className="rounded-full p-4 bg-orange-500 hover:bg-orange-600 cursor-pointer text-white"
           onClick={handleCreateQuiz}
         >
@@ -90,16 +91,16 @@ export default function Navbar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="cursor-pointer">
-                <AvatarImage src={user?.avatar || "https://github.com/shadcn.png"} alt="@user" />
-                <AvatarFallback>{user?.username?.[0] || "U"}</AvatarFallback>
+                <AvatarImage className={undefined} src={user?.avatar || "https://github.com/shadcn.png"} alt="@user" />
+                <AvatarFallback className={undefined}>{user?.username?.[0] || "U"}</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-24">
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer" inset={undefined}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Đăng xuất
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleNavigateUserStatistics} className="cursor-pointer">
+              <DropdownMenuItem onClick={handleNavigateUserStatistics} className="cursor-pointer" inset={undefined}>
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Xem lịch sử đấu
               </DropdownMenuItem>
@@ -108,6 +109,8 @@ export default function Navbar() {
         ) : (
           <Button
             className="bg-orange-500 hover:bg-orange-400 text-white"
+            variant="default"
+            size="default"
             onClick={handleLogin}
           >
             Đăng nhập

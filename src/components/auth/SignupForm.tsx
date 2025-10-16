@@ -1,21 +1,22 @@
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "../../lib/utils"
+import { Button } from "../../components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "../../components/ui/card"
+import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
 import { useForm } from "react-hook-form"
+import { HTMLAttributes } from "react"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useAuth } from "../../context/AuthContext"
 import { useNavigate } from "react-router-dom";
 
-// schema validate (tiếng Việt)
+// schema validate 
 const signUpSchema = z.object({
   username: z.string().min(6, "Tên đăng nhập phải có ít nhất 6 ký tự"),
   password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
@@ -25,7 +26,16 @@ const signUpSchema = z.object({
   path: ["confirmPassword"],
 });
 
-export function SignUpForm({ className, ...props }) {
+interface SignupFormProps extends HTMLAttributes<HTMLDivElement> {
+  className?: string;
+}
+
+interface User {
+  username: string;
+  password: string;
+}
+
+export function SignUpForm({ className, ...props }: SignupFormProps) {
   const { signup } = useAuth();
   const navigate = useNavigate();
   const {
@@ -36,7 +46,7 @@ export function SignUpForm({ className, ...props }) {
     resolver: zodResolver(signUpSchema),
   });
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: User) => {
     const ok = await signup(data.username, data.password);
     if (!ok) {
       alert("Đăng ký thất bại, vui lòng thử lại!");
@@ -55,32 +65,32 @@ export function SignUpForm({ className, ...props }) {
       <Card className="min-w-sm bg-white/80 backdrop-blur-lg p-8 rounded-2xl shadow-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Tạo tài khoản</CardTitle>
-          <CardDescription>
+          <CardDescription className={undefined}>
             Đăng ký với tên đăng nhập và bắt đầu hành trình của bạn
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className={undefined}>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid gap-6">
               <div className="grid gap-3">
-                <Label htmlFor="username">Tên đăng nhập</Label>
-                <Input id="username" type="text" placeholder="triho753@gmail.com" {...register("username")} />
+                <Label className={undefined} htmlFor="username">Tên đăng nhập</Label>
+                <Input className={undefined} id="username" type="text" placeholder="triho753@gmail.com" {...register("username")} />
                 {errors.username && <p className="text-red-500 text-sm">{errors.username.message}</p>}
               </div>
 
               <div className="grid gap-3">
-                <Label htmlFor="password">Mật khẩu</Label>
-                <Input id="password" type="password" {...register("password")} />
+                <Label className={undefined} htmlFor="password">Mật khẩu</Label>
+                <Input className={undefined} id="password" type="password" {...register("password")} />
                 {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
               </div>
 
               <div className="grid gap-3">
-                <Label htmlFor="confirmPassword">Xác nhận mật khẩu</Label>
-                <Input id="confirmPassword" type="password" {...register("confirmPassword")} />
+                <Label className={undefined} htmlFor="confirmPassword">Xác nhận mật khẩu</Label>
+                <Input className={undefined} id="confirmPassword" type="password" {...register("confirmPassword")} />
                 {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>}
               </div>
 
-              <Button type="submit" className="w-full">
+              <Button type="submit" variant="default" size="default" className="w-full">
                 Đăng ký
               </Button>
             </div>
