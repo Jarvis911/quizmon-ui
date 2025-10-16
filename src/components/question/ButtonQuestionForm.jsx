@@ -212,7 +212,7 @@ const ButtonQuestionForm = ({ quizId, question, onSaved }) => {
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-4 flex flex-row gap-8"
         >
-          {/* Chọn media */}
+          {/* If media */}
           <div className="flex flex-col gap-3">
             <div className="flex justify-center gap-8">
               <Button
@@ -231,7 +231,7 @@ const ButtonQuestionForm = ({ quizId, question, onSaved }) => {
               </Button>
             </div>
 
-            {/* Nếu chọn IMAGE */}
+            {/* If IMAGE */}
             {form.watch("mediaType") === "IMAGE" && (
               <ImagePicker
                 imageSrc={imageSrc}
